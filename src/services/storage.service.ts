@@ -422,6 +422,23 @@ class StorageService {
         added = true;
       }
     });
+    // Auto-normalize gradeLevel & section for legacy records
+    list.forEach(st => {
+      if (!st.gradeLevel && st.className) {
+        const match = st.className.match(/Grade\s*\d+/i);
+        if (match) {
+          st.gradeLevel = match[0];
+          added = true;
+        }
+      }
+      if (!st.section && st.className && st.gradeLevel) {
+        const sec = st.className.replace(st.gradeLevel, '').trim();
+        if (sec) {
+          st.section = sec;
+          added = true;
+        }
+      }
+    });
     if (added) {
       this.setItem(STORAGE_KEYS.STUDENTS, list);
     }
