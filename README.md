@@ -46,7 +46,7 @@ A responsive, production-ready examination management platform built with React 
 
 ```bash
 # Navigate to the project directory
-cd exam-management-template
+cd examly
 
 # Install dependencies
 npm install
@@ -60,7 +60,7 @@ The application will be running locally at `http://localhost:5173`.
 ### Production Build
 
 ```bash
-cd exam-management-template
+cd examly
 npm run build
 ```
 
