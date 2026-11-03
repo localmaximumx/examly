@@ -16,6 +16,12 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
   const [username, setUsername] = useState(defaultUser);
   const [password, setPassword] = useState('examly-demo');
 
+  // Synchronize defaults when role switches
+  React.useEffect(() => {
+    setUsername(role === 'Teacher' ? 'alemu.tadesse' : 'abel.tesfaye');
+    setPassword('examly-demo');
+  }, [role]);
+
   // Student registration form state
   const [regName, setRegName] = useState('');
   const [regUsername, setRegUsername] = useState('');
@@ -31,18 +37,16 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) {
+    const cleanUsername = username.trim();
+    if (!cleanUsername) {
       notify('Please enter a username.');
       return;
     }
-    const success = login(username, role);
-    if (!success) {
-      if (role === 'Student') {
-        notify('Student account not found in database. Please click "Create account".');
-      } else {
-        notify('Teacher account not found. Please click "Create account" to register.');
-      }
+    if (!password.trim()) {
+      notify('Please enter your password.');
+      return;
     }
+    login(cleanUsername, role, password);
   };
 
   const handleStudentRegisterSubmit = (e: React.FormEvent) => {
@@ -60,7 +64,7 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
       return;
     }
 
-    const cleanUsername = regUsername.trim() || regName.toLowerCase().replace(/\s+/g, '.');
+    const cleanUsername = (regUsername.trim() || regName.toLowerCase().replace(/\s+/g, '.')).toLowerCase();
     const cleanSection = regSection.replace(/^Section\s*/i, '').trim() || 'A';
     const computedClass = `${regGrade}${cleanSection}`;
 
@@ -76,9 +80,8 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
 
     if (res.success && res.user) {
       refreshData();
-      login(cleanUsername, 'Student');
-      notify(`Welcome, ${res.user.name}! Registered in ${regGrade} (${cleanSection}).`);
-      go('Student home');
+      login(cleanUsername, 'Student', regPassword);
+      notify(`Welcome, ${res.user.name}! Registered for ${regGrade} (${cleanSection}).`);
     } else {
       notify(res.message || 'Registration failed.');
     }
@@ -90,7 +93,7 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
       notify('Please enter your full name.');
       return;
     }
-    const cleanUsername = regTeacherUsername.trim() || regTeacherName.toLowerCase().replace(/\s+/g, '.');
+    const cleanUsername = (regTeacherUsername.trim() || regTeacherName.toLowerCase().replace(/\s+/g, '.')).toLowerCase();
     if (!regTeacherPassword.trim()) {
       notify('Please enter a password.');
       return;
@@ -104,9 +107,8 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
 
     if (res.success && res.user) {
       refreshData();
-      login(cleanUsername, 'Teacher');
+      login(cleanUsername, 'Teacher', regTeacherPassword);
       notify(`Welcome, ${res.user.name}! Teacher account registered successfully.`);
-      go('Teacher dashboard');
     } else {
       notify(res.message || 'Teacher registration failed.');
     }

@@ -40,7 +40,7 @@ interface AppContextType {
   refreshData: () => void;
   go: (next: Screen) => void;
   changeRole: (next: UserRole) => void;
-  login: (username: string, role: UserRole) => boolean;
+  login: (username: string, role: UserRole, password?: string) => { success: boolean; message?: string };
   logout: () => void;
   notify: (message: string) => void;
   setMobileOpen: (open: boolean) => void;
@@ -60,12 +60,12 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const isTeacherScreen = (s?: Screen | null): boolean => {
   if (!s || !SCREEN_TO_ROUTE[s]) return false;
-  return SCREEN_TO_ROUTE[s].startsWith('/teacher');
+  return SCREEN_TO_ROUTE[s].startsWith('/teacher') && s !== 'Teacher login';
 };
 
 const isStudentScreen = (s?: Screen | null): boolean => {
   if (!s || !SCREEN_TO_ROUTE[s]) return false;
-  return SCREEN_TO_ROUTE[s].startsWith('/student');
+  return SCREEN_TO_ROUTE[s].startsWith('/student') && s !== 'Student login' && s !== 'Student register';
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -226,6 +226,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!currentUser || currentUser.role !== 'Teacher') {
         const res = authService.login('alemu.tadesse', 'Teacher');
         if (res.user) setUser(res.user);
+      } else {
+        setUser(currentUser);
       }
       setLastTeacherScreen(matchedScreen);
       localStorage.setItem('examly_last_teacher_screen', matchedScreen);
@@ -235,6 +237,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!currentUser || currentUser.role !== 'Student') {
         const res = authService.login('abel.tesfaye', 'Student');
         if (res.user) setUser(res.user);
+      } else {
+        setUser(currentUser);
       }
       setLastStudentScreen(matchedScreen);
       localStorage.setItem('examly_last_student_screen', matchedScreen);
@@ -244,15 +248,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const go = useCallback((next: Screen) => {
     const targetRoute = getRouteForScreen(next);
     if (isTeacherScreen(next)) {
-      const res = authService.login('alemu.tadesse', 'Teacher');
-      if (res.user) setUser(res.user);
       setRole('Teacher');
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'Teacher') {
+        const res = authService.login('alemu.tadesse', 'Teacher');
+        if (res.user) setUser(res.user);
+      } else {
+        setUser(currentUser);
+      }
       setLastTeacherScreen(next);
       localStorage.setItem('examly_last_teacher_screen', next);
     } else if (isStudentScreen(next)) {
-      const res = authService.login('abel.tesfaye', 'Student');
-      if (res.user) setUser(res.user);
       setRole('Student');
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'Student') {
+        const res = authService.login('abel.tesfaye', 'Student');
+        if (res.user) setUser(res.user);
+      } else {
+        setUser(currentUser);
+      }
       setLastStudentScreen(next);
       localStorage.setItem('examly_last_student_screen', next);
     }
@@ -263,10 +277,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [navigate]);
 
   const changeRole = useCallback((nextRole: UserRole) => {
+    const currentUser = authService.getCurrentUser();
     if (nextRole === 'Teacher') {
-      const res = authService.login('alemu.tadesse', 'Teacher');
-      if (res.user) setUser(res.user);
       setRole('Teacher');
+      if (!currentUser || currentUser.role !== 'Teacher') {
+        const res = authService.login('alemu.tadesse', 'Teacher');
+        if (res.user) setUser(res.user);
+      } else {
+        setUser(currentUser);
+      }
       const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || lastTeacherScreen || 'Teacher dashboard';
       const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
       setScreen(targetScreen);
@@ -274,9 +293,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('examly_last_teacher_screen', targetScreen);
       navigate(getRouteForScreen(targetScreen));
     } else {
-      const res = authService.login('abel.tesfaye', 'Student');
-      if (res.user) setUser(res.user);
       setRole('Student');
+      if (!currentUser || currentUser.role !== 'Student') {
+        const res = authService.login('abel.tesfaye', 'Student');
+        if (res.user) setUser(res.user);
+      } else {
+        setUser(currentUser);
+      }
       const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || lastStudentScreen || 'Student home';
       const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
       setScreen(targetScreen);
@@ -286,37 +309,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [navigate, lastTeacherScreen, lastStudentScreen]);
 
-  const login = useCallback((username: string, loginRole: UserRole): boolean => {
-    const res = authService.login(username, loginRole);
-    if (res.success && res.user) {
-      setUser(res.user);
-      setRole(loginRole);
-      if (loginRole === 'Teacher') {
-        const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || lastTeacherScreen || 'Teacher dashboard';
-        const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
-        go(targetScreen);
-      } else {
-        const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || lastStudentScreen || 'Student home';
-        const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
-        go(targetScreen);
+  const login = useCallback(
+    (username: string, loginRole: UserRole, password?: string): { success: boolean; message?: string } => {
+      const res = authService.login(username, loginRole, password);
+      if (res.success && res.user) {
+        setUser(res.user);
+        setRole(loginRole);
+        if (loginRole === 'Teacher') {
+          const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || lastTeacherScreen || 'Teacher dashboard';
+          const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
+          setScreen(targetScreen);
+          setLastTeacherScreen(targetScreen);
+          localStorage.setItem('examly_last_teacher_screen', targetScreen);
+          navigate(getRouteForScreen(targetScreen));
+        } else {
+          const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || lastStudentScreen || 'Student home';
+          const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
+          setScreen(targetScreen);
+          setLastStudentScreen(targetScreen);
+          localStorage.setItem('examly_last_student_screen', targetScreen);
+          navigate(getRouteForScreen(targetScreen));
+        }
+        notify(`Welcome back, ${res.user.name}!`);
+        return { success: true };
       }
-      notify(`Welcome back, ${res.user.name}!`);
-      return true;
-    }
-    notify('Login failed. Please check credentials.');
-    return false;
-  }, [go, notify, lastTeacherScreen, lastStudentScreen]);
+      const errorMsg = res.message || 'Login failed. Please verify credentials.';
+      notify(errorMsg);
+      return { success: false, message: errorMsg };
+    },
+    [navigate, notify, lastTeacherScreen, lastStudentScreen]
+  );
 
   const logout = useCallback(() => {
     authService.logout();
     setUser(null);
     if (role === 'Teacher') {
-      go('Teacher login');
+      setScreen('Teacher login');
+      navigate('/teacher/login');
     } else {
-      go('Student login');
+      setScreen('Student login');
+      navigate('/student/login');
     }
     notify('You have been logged out.');
-  }, [role, go, notify]);
+  }, [role, navigate, notify]);
 
   return (
     <AppContext.Provider

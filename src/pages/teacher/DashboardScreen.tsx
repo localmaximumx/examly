@@ -54,10 +54,17 @@ export const DashboardScreen: React.FC = () => {
     }
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
     <>
       <PageHeading
-        title={`Good morning, ${user?.name?.split(' ')[0] || 'Alemu'}! 👋`}
+        title={`${getGreeting()}, ${user?.name ? user.name.split(' ')[0] : 'Teacher'}! 👋`}
         desc="Here's what's happening with your assigned examinations and student admissions today."
         action={
           <Button icon={Plus} onClick={() => go('Create exam – general information')}>

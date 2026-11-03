@@ -157,12 +157,112 @@ export const Sidebar: React.FC = () => {
               }}
               onClick={e => e.stopPropagation()}
             >
+              {/* Authenticated User Identity Card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginBottom: '12px',
+                  paddingBottom: '10px',
+                  borderBottom: '1px solid var(--border-color, #2d3748)'
+                }}
+              >
+                <div className="avatar" style={{ width: '38px', height: '38px', fontSize: '13px', fontWeight: 700 }}>
+                  {user?.avatarText ||
+                    user?.name
+                      ?.split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase() ||
+                    (role === 'Teacher' ? 'TR' : 'ST')}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <strong
+                    style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      color: 'var(--text-primary, #fff)'
+                    }}
+                  >
+                    {user?.name || (role === 'Teacher' ? 'Teacher' : 'Student')}
+                  </strong>
+                  <small style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '11px', display: 'block' }}>
+                    @{user?.username || (role === 'Teacher' ? 'teacher' : 'student')}
+                  </small>
+                </div>
+              </div>
+
+              {/* Dynamic Profile Metadata */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                  marginBottom: '12px',
+                  fontSize: '11px',
+                  color: 'var(--text-secondary, #94a3b8)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Portal Role:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--accent-blue, #818cf8)' }}>
+                    {role === 'Teacher' ? 'Teacher / Lead' : 'Student'}
+                  </span>
+                </div>
+                {role === 'Student' && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Student ID:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary, #fff)' }}>
+                        {user?.studentId || 'N/A'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Classroom:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--accent-blue, #818cf8)' }}>
+                        {user?.classId || 'Unassigned'}
+                      </span>
+                    </div>
+                    {user?.gradeLevel && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Grade / Sec:</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary, #fff)' }}>
+                          {user.gradeLevel} {user.section ? `(${user.section})` : ''}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+                {role === 'Teacher' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Faculty Email:</span>
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        color: 'var(--text-primary, #fff)',
+                        maxWidth: '140px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {user?.email || `${user?.username || 'teacher'}@examly.edu`}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Need help section inside profile options */}
               <div
                 className="help-card"
                 style={{
                   margin: '0 0 10px',
-                  padding: '12px',
+                  padding: '10px',
                   background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
                   borderRadius: '8px',
                   border: '1px solid var(--border-color, #2d3748)'
@@ -174,14 +274,14 @@ export const Sidebar: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
-                    marginBottom: '6px',
+                    marginBottom: '4px',
                     color: 'var(--accent-blue, #818cf8)'
                   }}
                 >
-                  <CircleHelp size={16} />
-                  <b style={{ fontSize: '13px', color: 'var(--text-primary, #fff)' }}>Need some help?</b>
+                  <CircleHelp size={15} />
+                  <b style={{ fontSize: '12px', color: 'var(--text-primary, #fff)' }}>Need some help?</b>
                 </div>
-                <p style={{ margin: '4px 0 8px', fontSize: '12px', color: 'var(--text-secondary, #94a3b8)', lineHeight: 1.5 }}>
+                <p style={{ margin: '2px 0 6px', fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', lineHeight: 1.4 }}>
                   Visit our help center for guides, FAQs, and support.
                 </p>
                 <button
@@ -193,7 +293,7 @@ export const Sidebar: React.FC = () => {
                     border: 0,
                     background: 'transparent',
                     color: 'var(--accent-blue, #818cf8)',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     padding: 0
@@ -203,7 +303,7 @@ export const Sidebar: React.FC = () => {
                     notify('Help center: Documentation & user guide available.');
                   }}
                 >
-                  Visit help center <ArrowRight size={13} />
+                  Visit help center <ArrowRight size={12} />
                 </button>
               </div>
 
@@ -245,14 +345,23 @@ export const Sidebar: React.FC = () => {
             title="Click for profile options"
           >
             <div className="avatar">
-              {user?.avatarText || (role === 'Teacher' ? 'AT' : 'AB')}
+              {user?.avatarText ||
+                user?.name
+                  ?.split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase() ||
+                (role === 'Teacher' ? 'TR' : 'ST')}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <strong style={{ display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                {user?.name || (role === 'Teacher' ? 'Alemu Tadesse' : 'Abel Tesfaye')}
+                {user?.name || (role === 'Teacher' ? 'Teacher' : 'Student')}
               </strong>
-              <small style={{ color: 'var(--text-secondary, #94a3b8)', display: 'block' }}>
-                {role} · {role === 'Teacher' ? 'Faculty Lead' : (user?.classId || 'Grade 10A')}
+              <small style={{ color: 'var(--text-secondary, #94a3b8)', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                {role === 'Teacher'
+                  ? `Teacher · @${user?.username || 'teacher'}`
+                  : `Student · @${user?.username || 'student'} · ${user?.classId || user?.gradeLevel || 'Class'}`}
               </small>
             </div>
             <button

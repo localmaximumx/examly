@@ -150,9 +150,9 @@ export const StudentHomeScreen: React.FC = () => {
       <div className="student-welcome">
         <div>
           <Badge tone="blue">STUDENT PORTAL</Badge>
-          <h2>Welcome back, {user?.name?.split(' ')[0] || 'Abel'}! 👋</h2>
+          <h2>Welcome back, {user?.name ? user.name.split(' ')[0] : 'Student'}! 👋</h2>
           <p>
-            Enrolled in <b>{user?.classId || 'Grade 10A'}</b> · Student ID: <b>{user?.studentId || 'STU-1001'}</b>
+            Enrolled in <b>{user?.classId || user?.gradeLevel || 'Classroom'}</b> · Student ID: <b>{user?.studentId || 'N/A'}</b>
           </p>
           {activeOrUpcomingExam && activeOrUpcomingExam.status === 'Active' && isEnrolledInActiveExam && (
             <Button onClick={(e) => handleEnterExam(activeOrUpcomingExam, e)}>

@@ -7,8 +7,18 @@ class AuthService {
     return storageService.getCurrentUser();
   }
 
-  public login(username: string, role: UserRole, password?: string): { success: boolean; user?: User; message?: string } {
+  public login(
+    username: string,
+    role: UserRole,
+    password?: string
+  ): { success: boolean; user?: User; message?: string } {
     const cleanUsername = username.trim().toLowerCase();
+    if (!cleanUsername) {
+      return {
+        success: false,
+        message: 'Please enter your username.'
+      };
+    }
 
     if (role === 'Teacher') {
       const teachers = storageService.getTeachers();
@@ -20,18 +30,44 @@ class AuthService {
       if (!found) {
         return {
           success: false,
-          message: `No teacher account found for "${username}". Please click "Create account".`
+          message: `No teacher account found with username "${username}". Please click "Create account" to register.`
         };
       }
 
-      storageService.saveCurrentUser(found);
+      // Password verification if password is provided
+      if (password !== undefined) {
+        if (!password.trim()) {
+          return {
+            success: false,
+            message: 'Please enter your password.'
+          };
+        }
+        const expected = found.password || 'examly-demo';
+        if (password !== expected) {
+          return {
+            success: false,
+            message: 'Incorrect password. Please verify your credentials and try again.'
+          };
+        }
+      }
+
+      const user: User = {
+        id: found.id,
+        username: found.username,
+        name: found.name,
+        role: 'Teacher',
+        avatarText: found.avatarText || found.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
+        email: found.email || `${found.username}@examly.edu`
+      };
+
+      storageService.saveCurrentUser(user);
       storageService.addActivityLog({
-        action: `${found.name} signed into the teacher workspace`,
-        user: found.name,
+        action: `${user.name} signed into the teacher workspace`,
+        user: user.name,
         timestamp: 'Just now',
         color: 'blue'
       });
-      return { success: true, user: found };
+      return { success: true, user };
     } else {
       // Find in local student database
       const students = storageService.getStudents();
@@ -40,8 +76,25 @@ class AuthService {
       if (!student) {
         return {
           success: false,
-          message: `No account found for "${username}". Please click "Create account".`
+          message: `No student account found with username "${username}". Please click "Create account" to register.`
         };
+      }
+
+      // Password verification if password is provided
+      if (password !== undefined) {
+        if (!password.trim()) {
+          return {
+            success: false,
+            message: 'Please enter your password.'
+          };
+        }
+        const expected = student.password || 'examly-demo';
+        if (password !== expected) {
+          return {
+            success: false,
+            message: 'Incorrect password. Please verify your credentials and try again.'
+          };
+        }
       }
 
       const user: User = {
@@ -53,7 +106,8 @@ class AuthService {
         avatarText: student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
         classId: student.className,
         gradeLevel: student.gradeLevel,
-        section: student.section
+        section: student.section,
+        email: `${student.username}@examly.edu`
       };
 
       storageService.saveCurrentUser(user);
@@ -75,7 +129,10 @@ class AuthService {
     const cleanUsername = data.username.trim().toLowerCase();
     const teachers = storageService.getTeachers();
 
-    if (teachers.some(t => t.username.toLowerCase() === cleanUsername)) {
+    if (
+      teachers.some(t => t.username.toLowerCase() === cleanUsername) ||
+      SEED_TEACHERS.some(t => t.username.toLowerCase() === cleanUsername)
+    ) {
       return {
         success: false,
         message: `Username "${cleanUsername}" is already registered. Please choose another username or sign in.`
@@ -102,12 +159,20 @@ class AuthService {
     className?: string;
   }): { success: boolean; user?: User; message?: string } {
     const cleanUsername = data.username.trim().toLowerCase();
+    const cleanStudentId = data.studentId?.trim().toLowerCase();
     const students = storageService.getStudents();
 
     if (students.some(s => s.username.toLowerCase() === cleanUsername)) {
       return {
         success: false,
-        message: `Username "${cleanUsername}" is already registered. Please choose another or sign in.`
+        message: `Username "${cleanUsername}" is already registered. Please choose another username or sign in.`
+      };
+    }
+
+    if (cleanStudentId && students.some(s => s.studentId && s.studentId.toLowerCase() === cleanStudentId)) {
+      return {
+        success: false,
+        message: `Student ID "${data.studentId}" is already registered to another student. Please verify your ID.`
       };
     }
 
@@ -125,7 +190,8 @@ class AuthService {
       avatarText: newStudent.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
       classId: newStudent.className,
       gradeLevel: newStudent.gradeLevel,
-      section: newStudent.section
+      section: newStudent.section,
+      email: `${newStudent.username}@examly.edu`
     };
 
     storageService.saveCurrentUser(user);
