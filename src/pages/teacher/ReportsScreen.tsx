@@ -23,8 +23,9 @@ export const ReportsScreen: React.FC = () => {
   const { notify, user, selectedExamId, setSelectedExamId } = useApp();
 
   const exams = useMemo(() => examService.getExamsForTeacher(user?.username), [user]);
+  const teacherExamIds = useMemo(() => new Set(exams.map(e => e.id)), [exams]);
   const allStudents = useMemo(() => storageService.getStudents(), []);
-  const allSubmissions = useMemo(() => storageService.getSubmissions(), []);
+  const allSubmissions = useMemo(() => storageService.getSubmissions().filter(s => teacherExamIds.has(s.examId)), [teacherExamIds]);
   const results = useMemo(() => gradingService.getResultsStats(), []);
 
   const completedExams = useMemo(() => exams.filter(e => e.status === 'Completed'), [exams]);
@@ -34,14 +35,15 @@ export const ReportsScreen: React.FC = () => {
       return selectedExamId;
     }
     const firstCompleted = exams.find(e => e.status === 'Completed');
-    return firstCompleted?.id || exams[0]?.id || 'EXM-001';
+    return firstCompleted?.id || exams[0]?.id || '';
   });
   const [selectedSemester, setSelectedSemester] = useState<string>('First semester');
   const academicYear = '2026/2027';
 
   const currentExam = useMemo(() => {
-    return exams.find(e => e.id === activeExamId) || exams.find(e => e.status === 'Completed') || exams[0] || examService.getAllExams()[0];
-  }, [exams, activeExamId]);
+    if (exams.length === 0) return null;
+    return exams.find(e => e.id === activeExamId) || completedExams[0] || exams[0];
+  }, [exams, activeExamId, completedExams]);
 
   const isCurrentExamCompleted = currentExam?.status === 'Completed';
 
@@ -330,71 +332,85 @@ export const ReportsScreen: React.FC = () => {
       </div>
 
       {/* Target Parameters Bar */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '14px',
-          marginBottom: '20px',
-          padding: '14px 20px',
-          background: 'var(--card-bg, #1e2433)',
-          border: '1px solid var(--border-color, #2b354d)',
-          borderRadius: '10px'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600 }}>Active Examination:</span>
-            <select
-              value={currentExam.id}
-              onChange={e => {
-                setActiveExamId(e.target.value);
-                setSelectedExamId(e.target.value);
-              }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '7px',
-                background: 'var(--bg-secondary, #151a26)',
-                color: 'var(--text-primary, #fff)',
-                border: '1px solid var(--border-color, #2b354d)',
-                fontSize: '13px'
-              }}
-            >
-              {exams.map(e => (
-                <option key={e.id} value={e.id}>
-                  {e.status === 'Completed' ? '✓ ' : '⏳ '}{e.title} ({e.className}) [{e.status.toUpperCase()}]
-                </option>
-              ))}
-            </select>
+      {!currentExam ? (
+        <Panel title="Examinations">
+          <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <ClipboardList size={48} style={{ opacity: 0.4, marginBottom: '16px' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+              No examinations found for reports
+            </h3>
+            <p style={{ maxWidth: '440px', margin: '0 auto', fontSize: '14px', lineHeight: 1.5 }}>
+              You do not have any examinations yet. Create examinations and grade submissions to generate analytical reports.
+            </p>
           </div>
+        </Panel>
+      ) : (
+        <>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '14px',
+              marginBottom: '20px',
+              padding: '14px 20px',
+              background: 'var(--card-bg, #1e2433)',
+              border: '1px solid var(--border-color, #2b354d)',
+              borderRadius: '10px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>Active Examination:</span>
+                <select
+                  value={currentExam.id}
+                  onChange={e => {
+                    setActiveExamId(e.target.value);
+                    setSelectedExamId(e.target.value);
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '7px',
+                    background: 'var(--bg-secondary, #151a26)',
+                    color: 'var(--text-primary, #fff)',
+                    border: '1px solid var(--border-color, #2b354d)',
+                    fontSize: '13px'
+                  }}
+                >
+                  {exams.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.status === 'Completed' ? '✓ ' : '⏳ '}{e.title} ({e.className}) [{e.status.toUpperCase()}]
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600 }}>Semester Scope:</span>
-            <select
-              value={selectedSemester}
-              onChange={e => setSelectedSemester(e.target.value)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '7px',
-                background: 'var(--bg-secondary, #151a26)',
-                color: 'var(--text-primary, #fff)',
-                border: '1px solid var(--border-color, #2b354d)',
-                fontSize: '13px'
-              }}
-            >
-              <option value="First semester">First semester</option>
-              <option value="Second semester">Second semester</option>
-            </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>Semester Scope:</span>
+                <select
+                  value={selectedSemester}
+                  onChange={e => setSelectedSemester(e.target.value)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '7px',
+                    background: 'var(--bg-secondary, #151a26)',
+                    color: 'var(--text-primary, #fff)',
+                    border: '1px solid var(--border-color, #2b354d)',
+                    fontSize: '13px'
+                  }}
+                >
+                  <option value="First semester">First semester</option>
+                  <option value="Second semester">Second semester</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary, #94a3b8)' }}>Academic Year:</span>
+              <Badge tone="purple">{academicYear}</Badge>
+            </div>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12px', color: 'var(--text-secondary, #94a3b8)' }}>Academic Year:</span>
-          <Badge tone="purple">{academicYear}</Badge>
-        </div>
-      </div>
 
       {/* 4 Standardized Report Cards */}
       <div className="report-grid">
@@ -504,6 +520,8 @@ export const ReportsScreen: React.FC = () => {
           </Button>
         </div>
       </div>
-    </>
-  );
+      </>
+    )}
+  </>
+);
 };

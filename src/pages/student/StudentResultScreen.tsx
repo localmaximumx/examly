@@ -11,26 +11,44 @@ export const StudentResultScreen: React.FC = () => {
   const studentUser = user?.username || '';
   const studentId = user?.studentId || '';
 
+  const studentExams = useMemo(() => {
+    return examService.getExamsForStudent(studentUser || studentId);
+  }, [studentUser, studentId]);
+
   const exam = useMemo(() => {
-    return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
-  }, [selectedExamId]);
+    return examService.getExamById(selectedExamId) || studentExams[0] || null;
+  }, [selectedExamId, studentExams]);
 
   const submission = useMemo(() => {
     const list = storageService.getSubmissions();
-    // Prioritize submission for this student and exam
-    const studentSub = list.find(
+    return list.find(
       s => (s.examId === selectedExamId || s.id === selectedExamId) &&
            (s.studentUsername === studentUser || s.studentId === studentId)
+    ) || null;
+  }, [selectedExamId, studentUser, studentId]);
+
+  if (!submission) {
+    return (
+      <div className="center-state">
+        <div
+          className="confirm-icon"
+          style={{ background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-blue, #818cf8)' }}
+        >
+          <Clock size={36} />
+        </div>
+        <Badge tone="blue">RECORD NOT FOUND</Badge>
+        <h1>No Submission Recorded</h1>
+        <p style={{ maxWidth: '540px', margin: '0 auto 24px' }}>
+          We could not find a submitted examination record for your student account under this assessment.
+        </p>
+        <Button kind="outline" onClick={() => go('Student home')}>
+          Back to Dashboard
+        </Button>
+      </div>
     );
-    if (studentSub) return studentSub;
+  }
 
-    // Fallback: check any submission for this exam or student
-    return list.find(s => s.examId === selectedExamId) ||
-           list.find(s => s.studentUsername === studentUser) ||
-           list[0];
-  }, [user, selectedExamId, studentUser, studentId]);
-
-  const isReleased = Boolean(submission?.resultsReleased);
+  const isReleased = Boolean(submission.resultsReleased);
 
   // If results are NOT released yet, withhold the score completely
   if (!isReleased) {

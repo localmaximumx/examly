@@ -21,9 +21,13 @@ export const ExamInstructionsScreen: React.FC = () => {
     };
   }, []);
 
+  const studentExams = useMemo(() => {
+    return examService.getExamsForStudent(user?.username || studentId);
+  }, [user, studentId, poll]);
+
   const exam = useMemo(() => {
-    return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
-  }, [selectedExamId, poll]);
+    return examService.getExamById(selectedExamId) || studentExams[0] || null;
+  }, [selectedExamId, studentExams]);
 
   const student = useMemo(() => {
     return storageService.getStudents().find(
@@ -32,18 +36,20 @@ export const ExamInstructionsScreen: React.FC = () => {
   }, [studentId, user, poll]);
 
   const assignedClasses = useMemo(() => {
+    if (!exam) return [];
     return (exam.assignedClassNames || []).filter(c => c && c !== 'Unassigned').map(c => c.toLowerCase());
   }, [exam]);
 
   const isEnrolled = useMemo(() => {
-    if (!student || !student.className || student.className === 'Unassigned') return false;
+    if (!exam || !student || !student.className || student.className === 'Unassigned') return false;
     const check = examService.canStudentEnterExam(exam.id, studentId);
     return check.allowed || check.status === 'WaitingForStart' || check.status === 'Submitted';
-  }, [student, exam.id, studentId, poll]);
+  }, [student, exam, studentId, poll]);
 
-  const isExamLive = exam.status === 'Active';
+  const isExamLive = exam?.status === 'Active';
 
   const handleStartExam = () => {
+    if (!exam) return;
     const check = examService.canStudentEnterExam(exam.id, studentId);
     if (!check.allowed) {
       notify(check.reason || 'Cannot enter exam at this moment.');
@@ -51,6 +57,21 @@ export const ExamInstructionsScreen: React.FC = () => {
     }
     go('Main examination');
   };
+
+  if (!exam) {
+    return (
+      <div className="center-state">
+        <Badge tone="orange">EXAMINATION UNAVAILABLE</Badge>
+        <h1>Examination Not Found</h1>
+        <p style={{ maxWidth: '540px', margin: '0 auto 24px' }}>
+          This examination is not assigned to your classroom or is no longer available.
+        </p>
+        <Button kind="primary" onClick={() => go('Student home')}>
+          Back to Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>

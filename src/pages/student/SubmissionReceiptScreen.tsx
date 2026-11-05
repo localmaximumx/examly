@@ -9,14 +9,19 @@ import { storageService } from '../../services/storage.service';
 export const SubmissionReceiptScreen: React.FC = () => {
   const { go, user, selectedExamId } = useApp();
 
-  const exam = useMemo(() => {
-    return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
-  }, [selectedExamId]);
-
   const studentId = user?.studentId || '';
   const studentUsername = user?.username || '';
 
+  const studentExams = useMemo(() => {
+    return examService.getExamsForStudent(studentUsername || studentId);
+  }, [studentUsername, studentId]);
+
+  const exam = useMemo(() => {
+    return examService.getExamById(selectedExamId) || studentExams[0] || null;
+  }, [selectedExamId, studentExams]);
+
   const submission = useMemo(() => {
+    if (!exam) return null;
     const list = storageService.getSubmissions();
     const found = list.find(
       s => s.examId === exam.id && (s.studentId === studentId || s.studentUsername === studentUsername)
@@ -41,6 +46,27 @@ export const SubmissionReceiptScreen: React.FC = () => {
       resultsReleased: false
     };
   }, [exam, studentId, studentUsername, user]);
+
+  if (!exam || !submission) {
+    return (
+      <div className="center-state">
+        <div
+          className="confirm-icon"
+          style={{ background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-blue, #818cf8)' }}
+        >
+          <Clock size={36} />
+        </div>
+        <Badge tone="blue">RECEIPT NOT FOUND</Badge>
+        <h1>No Receipt Available</h1>
+        <p style={{ maxWidth: '540px', margin: '0 auto 24px' }}>
+          We could not find an examination receipt associated with your student account.
+        </p>
+        <Button kind="outline" onClick={() => go('Student home')}>
+          Back to Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="center-state">

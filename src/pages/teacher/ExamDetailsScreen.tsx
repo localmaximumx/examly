@@ -17,7 +17,8 @@ import {
   Plus,
   X,
   School,
-  Trash2
+  Trash2,
+  ClipboardList
 } from 'lucide-react';
 import { PageHeading, Button, Badge, Panel, Stat, LatexText } from '../../components/common';
 import { useApp } from '../../context/AppContext';
@@ -26,6 +27,7 @@ import { storageService } from '../../services/storage.service';
 import { gradingService, isSameClass } from '../../services/grading.service';
 import { formatCSVFilename, downloadCSV } from '../../utils/csv.utils';
 import { formatDisplayDate } from '../../utils/date.utils';
+import { Examination } from '../../types';
 
 export const ExamDetailsScreen: React.FC = () => {
   const {
@@ -46,9 +48,41 @@ export const ExamDetailsScreen: React.FC = () => {
   const [addClassModalOpen, setAddClassModalOpen] = useState(false);
   const [selectedClassToAssign, setSelectedClassToAssign] = useState('');
 
-  const exam = useMemo(() => {
-    return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
-  }, [selectedExamId, dataVersion]);
+  const teacherUsername = user?.username || '';
+  const teacherExams = useMemo(() => {
+    return examService.getExamsForTeacher(teacherUsername);
+  }, [teacherUsername, dataVersion]);
+
+  const fallbackExam: Examination = useMemo(() => ({
+    id: '',
+    code: '',
+    title: 'No Examination',
+    description: '',
+    subject: '',
+    classId: '',
+    className: '',
+    assignedClassNames: [],
+    assignedStudentCount: 0,
+    assignedStudentIds: [],
+    examDate: '',
+    startTime: '',
+    duration: '0 min',
+    durationMinutes: 0,
+    totalMarks: 0,
+    instructions: '',
+    academicTerm: '',
+    status: 'Ready',
+    questions: [],
+    createdAt: '',
+    updatedAt: ''
+  }), []);
+
+  const activeTeacherExam = useMemo(() => {
+    if (!teacherExams || teacherExams.length === 0) return null;
+    return teacherExams.find(e => e.id === selectedExamId) || teacherExams[0];
+  }, [teacherExams, selectedExamId]);
+
+  const exam: Examination = activeTeacherExam || fallbackExam;
 
   // All classes assigned to this examination
   const allAssignedClasses = useMemo(() => {
@@ -295,6 +329,27 @@ export const ExamDetailsScreen: React.FC = () => {
 
   const lifecycleStages = ['Ready', 'Active', 'Completed'];
   const currentStageIndex = lifecycleStages.indexOf(exam.status);
+
+  if (!activeTeacherExam) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <Panel title="Examination Details">
+          <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <ClipboardList size={48} style={{ opacity: 0.4, marginBottom: '16px' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+              Examination not found
+            </h3>
+            <p style={{ maxWidth: '440px', margin: '0 auto 24px auto', fontSize: '14px', lineHeight: 1.5 }}>
+              The requested examination does not exist or you do not have permission to view it.
+            </p>
+            <Button kind="primary" onClick={() => go('Examination list')}>
+              Back to Examination List
+            </Button>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <>

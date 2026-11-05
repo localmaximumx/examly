@@ -9,7 +9,8 @@ import {
   Sparkles,
   Lock,
   Unlock,
-  Check
+  Check,
+  ClipboardList
 } from 'lucide-react';
 import { PageHeading, Button, Stat, Panel, Badge, LatexText } from '../../components/common';
 import { useApp } from '../../context/AppContext';
@@ -27,27 +28,32 @@ export const ResultsScreen: React.FC = () => {
     return examService.getExamsForTeacher(teacherUsername);
   }, [teacherUsername, dataVersion]);
 
+  const teacherExamIds = useMemo(() => new Set(exams.map(e => e.id)), [exams]);
+
   const currentExam = useMemo(() => {
+    if (exams.length === 0) return null;
     return exams.find(e => e.id === selectedExamId) || exams[0];
   }, [exams, selectedExamId]);
 
   const allSubmissions = useMemo(() => {
-    return storageService.getSubmissions();
-  }, [dataVersion]);
+    return storageService.getSubmissions().filter(s => teacherExamIds.has(s.examId));
+  }, [teacherExamIds, dataVersion]);
 
   // Submissions for the selected exam
   const examSubmissions = useMemo(() => {
+    if (!currentExam) return [];
     return allSubmissions.filter(s => s.examId === currentExam.id);
-  }, [allSubmissions, currentExam.id]);
+  }, [allSubmissions, currentExam]);
 
   const areResultsReleased = useMemo(() => {
+    if (!currentExam) return false;
     if (examSubmissions.length === 0) return Boolean(currentExam.resultsReleased);
     return examSubmissions.every(s => s.resultsReleased);
   }, [examSubmissions, currentExam]);
 
   // Calculate dynamic stats for this exam
   const stats = useMemo(() => {
-    const list = examSubmissions.length > 0 ? examSubmissions : allSubmissions;
+    const list = examSubmissions;
     const gradedList = list.filter(s => s.status === 'Graded' && s.score !== undefined);
     const totalGraded = gradedList.length;
     const awaitingGrading = list.length - totalGraded;
@@ -86,6 +92,7 @@ export const ResultsScreen: React.FC = () => {
   }, [examSubmissions, allSubmissions]);
 
   const handleGradeForEveryone = () => {
+    if (!currentExam) return;
     const res = storageService.gradeAllSubmissionsForExam(currentExam.id);
     refreshData();
     notify(
@@ -94,11 +101,33 @@ export const ResultsScreen: React.FC = () => {
   };
 
   const handleExport = () => {
+    if (!currentExam) return;
     const csv = gradingService.exportResultsCSV(currentExam.id);
     const filename = formatCSVFilename(currentExam.title, currentExam.className, 'Exam_Results');
     downloadCSV(csv, filename);
     notify(`Exported results for ${currentExam.title} (${filename}).`);
   };
+
+  if (!currentExam) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <Panel title="Results Dashboard">
+          <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <ClipboardList size={48} style={{ opacity: 0.4, marginBottom: '16px' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+              No examination outcomes found
+            </h3>
+            <p style={{ maxWidth: '440px', margin: '0 auto 24px auto', fontSize: '14px', lineHeight: 1.5 }}>
+              You do not have any examinations yet. Create and conduct examinations to view results and release grades.
+            </p>
+            <Button kind="primary" onClick={() => go('Create exam – general information')}>
+              Create Examination
+            </Button>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <>

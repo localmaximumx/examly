@@ -14,7 +14,7 @@ import { useApp } from '../../context/AppContext';
 import { examService } from '../../services/exam.service';
 import { storageService } from '../../services/storage.service';
 import { submissionService } from '../../services/submission.service';
-import { Question } from '../../types';
+import { Question, Examination } from '../../types';
 
 export const MainExaminationScreen: React.FC = () => {
   const { go, user, selectedExamId, notify, refreshData } = useApp();
@@ -27,9 +27,41 @@ export const MainExaminationScreen: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  const exam = useMemo(() => {
-    return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
-  }, [selectedExamId, poll]);
+  const studentKey = user?.studentId || user?.username || 'STU-STUDENT';
+
+  const studentExams = useMemo(() => {
+    return examService.getExamsForStudent(studentKey);
+  }, [studentKey, poll]);
+
+  const activeStudentExam = useMemo(() => {
+    return examService.getExamById(selectedExamId) || studentExams[0] || null;
+  }, [selectedExamId, studentExams]);
+
+  const fallbackExam: Examination = useMemo(() => ({
+    id: '',
+    code: '',
+    title: 'No Examination',
+    description: '',
+    subject: '',
+    classId: '',
+    className: '',
+    assignedClassNames: [],
+    assignedStudentCount: 0,
+    assignedStudentIds: [],
+    examDate: '',
+    startTime: '',
+    duration: '0 min',
+    durationMinutes: 0,
+    totalMarks: 0,
+    instructions: '',
+    academicTerm: '',
+    status: 'Ready',
+    questions: [],
+    createdAt: '',
+    updatedAt: ''
+  }), []);
+
+  const exam: Examination = activeStudentExam || fallbackExam;
 
   // Questions: Load exact questions authored by teacher, strictly omitting answer keys
   const questions: Question[] = useMemo(() => {
@@ -50,7 +82,6 @@ export const MainExaminationScreen: React.FC = () => {
   const currentQ = questions[currentQuestionIndex] || questions[0];
 
   // Persistent Answers in local database
-  const studentKey = user?.studentId || user?.username || 'STU-STUDENT';
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     return storageService.getStudentExamAnswers(exam.id, studentKey);
   });

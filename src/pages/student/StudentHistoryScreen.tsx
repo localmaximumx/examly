@@ -23,42 +23,21 @@ export const StudentHistoryScreen: React.FC = () => {
 
   // Combine real database submissions with assigned examinations
   const historyRows = useMemo(() => {
-    if (submissions.length > 0) {
-      return submissions.map(s => ({
-        id: s.id,
-        examId: s.examId,
-        title: s.examTitle,
-        subject: allExams.find(e => e.id === s.examId)?.subject || 'Mathematics',
-        date: s.submittedAt ? formatDisplayDate(s.submittedAt.split('·')[0].trim()) : 'Nov 02, 2026',
-        time: s.submittedAt ? (s.submittedAt.split('·')[1] || '').trim() : '',
-        status: s.resultsReleased ? 'Graded' : 'Submitted',
-        resultsReleased: s.resultsReleased,
-        score: s.score,
-        grade: s.grade,
-        maxScore: s.maxScore || 100,
-        answeredCount: s.answeredCount,
-        totalQuestions: s.totalQuestions
-      }));
-    }
-
-    // Default fallback if no submissions exist yet in local database
-    return [
-      {
-        id: 'SUB-INIT-101',
-        examId: 'EXM-001',
-        title: 'Mathematics Midterm Examination',
-        subject: 'Mathematics',
-        date: 'Nov 02, 2026',
-        time: '10:30 AM',
-        status: 'Submitted',
-        resultsReleased: false,
-        score: undefined,
-        grade: undefined,
-        maxScore: 100,
-        answeredCount: 20,
-        totalQuestions: 20
-      }
-    ];
+    return submissions.map(s => ({
+      id: s.id,
+      examId: s.examId,
+      title: s.examTitle,
+      subject: allExams.find(e => e.id === s.examId)?.subject || 'General',
+      date: s.submittedAt ? formatDisplayDate(s.submittedAt.split('·')[0].trim()) : 'Recent',
+      time: s.submittedAt ? (s.submittedAt.split('·')[1] || '').trim() : '',
+      status: s.resultsReleased ? 'Graded' : 'Submitted',
+      resultsReleased: s.resultsReleased,
+      score: s.score,
+      grade: s.grade,
+      maxScore: s.maxScore || 100,
+      answeredCount: s.answeredCount,
+      totalQuestions: s.totalQuestions
+    }));
   }, [submissions, allExams]);
 
   const handleRowClick = (r: typeof historyRows[0]) => {
@@ -96,7 +75,15 @@ export const StudentHistoryScreen: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {historyRows.map((r) => (
+              {historyRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-secondary)' }}>
+                    <FileCheck size={36} style={{ opacity: 0.35, marginBottom: '8px' }} />
+                    <p style={{ margin: 0, fontWeight: 500 }}>You have not completed any examinations yet.</p>
+                  </td>
+                </tr>
+              ) : (
+                historyRows.map((r) => (
                 <tr
                   key={r.id}
                   onClick={() => handleRowClick(r)}
@@ -143,7 +130,7 @@ export const StudentHistoryScreen: React.FC = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

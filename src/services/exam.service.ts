@@ -14,9 +14,11 @@ class ExamService {
 
   public getExamsForTeacher(teacherUsername?: string): Examination[] {
     const all = this.getAllExams();
-    if (!teacherUsername) return all;
+    const effectiveUsername = teacherUsername || storageService.getCurrentTeacher()?.username || storageService.getCurrentUser()?.username;
+    if (!effectiveUsername) return [];
+    const target = effectiveUsername.trim().toLowerCase();
     return all.filter(
-      e => !e.teacherUsername || e.teacherUsername === teacherUsername || e.teacherUsername === 'faculty'
+      e => (e.teacherUsername || '').trim().toLowerCase() === target
     );
   }
 
@@ -87,6 +89,10 @@ class ExamService {
   public createExam(examData: Partial<Examination>): Examination {
     const durationMin = examData.durationMinutes || (examData.duration ? parseInt(examData.duration, 10) : 60);
     const enrolledInClass = storageService.getStudents().filter(s => s.className === (examData.className || 'Grade 10A')).length;
+    const currentTeacher = storageService.getCurrentTeacher() || storageService.getCurrentUser();
+    const teacherUsername = examData.teacherUsername || currentTeacher?.username || '';
+    const teacherName = examData.teacherName || currentTeacher?.name || 'Teacher';
+
     const newExam: Examination = {
       id: examData.id || `EXM-${Date.now().toString().slice(-4)}`,
       code: examData.code || `EX-${Math.floor(100 + Math.random() * 900)}`,
@@ -95,6 +101,9 @@ class ExamService {
       subject: examData.subject || 'General',
       classId: examData.classId || 'CLS-10A',
       className: examData.className || 'Grade 10A',
+      assignedClassNames: examData.assignedClassNames || (examData.className ? [examData.className] : ['Grade 10A']),
+      teacherUsername,
+      teacherName,
       assignedStudentCount: examData.assignedStudentCount ?? (examData.assignedStudentIds?.length || enrolledInClass),
       assignedStudentIds: examData.assignedStudentIds || [],
       examDate: formatDisplayDate(examData.examDate || new Date()),
@@ -259,7 +268,8 @@ class ExamService {
   }
 
   public getDashboardStats(teacherUsername?: string) {
-    const exams = teacherUsername ? this.getExamsForTeacher(teacherUsername) : this.getAllExams();
+    const user = teacherUsername || storageService.getCurrentTeacher()?.username || storageService.getCurrentUser()?.username;
+    const exams = user ? this.getExamsForTeacher(user) : [];
     const students = storageService.getStudents();
     const allSubmissions = storageService.getSubmissions();
     const examIds = new Set(exams.map(e => e.id));
@@ -270,9 +280,23 @@ class ExamService {
     const upcomingExams = exams.filter(e => e.status === 'Ready').length;
     const completedExams = exams.filter(e => e.status === 'Completed').length;
 
-    const teacherClassNames = new Set(exams.map(e => e.className));
-    const enrolledStudents = students.filter(s => teacherClassNames.has(s.className));
-    const totalStudents = enrolledStudents.length > 0 ? enrolledStudents.length : students.length;
+    const teacherClassNames = new Set<string>();
+    exams.forEach(e => {
+      (e.assignedClassNames || []).forEach(c => {
+        if (c && c !== 'Unassigned') teacherClassNames.add(c.trim().toLowerCase());
+      });
+      if (e.className && e.className !== 'Unassigned') {
+        e.className.split(',').forEach(c => {
+          const t = c.trim().toLowerCase();
+          if (t && t !== 'unassigned') teacherClassNames.add(t);
+        });
+      }
+    });
+
+    const enrolledStudents = teacherClassNames.size > 0
+      ? students.filter(s => s.className && teacherClassNames.has(s.className.trim().toLowerCase()))
+      : [];
+    const totalStudents = enrolledStudents.length;
 
     const graded = submissions.filter(s => s.status === 'Graded' && typeof s.percentage === 'number');
     const avgScore =
@@ -349,9 +373,10 @@ class ExamService {
   }
 
   public getTeacherPerformanceOverview(teacherUsername?: string): Array<{ label: string; percentage: number; tooltip: string }> {
-    const exams = teacherUsername ? this.getExamsForTeacher(teacherUsername) : this.getAllExams();
-    const allSubmissions = storageService.getSubmissions();
+    const exams = this.getExamsForTeacher(teacherUsername);
+    if (exams.length === 0) return [];
 
+    const allSubmissions = storageService.getSubmissions();
     const bars: Array<{ label: string; percentage: number; tooltip: string }> = [];
 
     exams.forEach(exam => {
@@ -368,18 +393,6 @@ class ExamService {
         tooltip: `${exam.title}: ${pct}% avg (${subs.length} graded)`
       });
     });
-
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Sep', 'Oct'];
-    let mIdx = 0;
-    while (bars.length < 8 && mIdx < months.length) {
-      const base = 70 + ((mIdx * 5) % 22);
-      bars.push({
-        label: months[mIdx],
-        percentage: base,
-        tooltip: `${months[mIdx]} Term: ${base}% avg`
-      });
-      mIdx++;
-    }
 
     return bars;
   }

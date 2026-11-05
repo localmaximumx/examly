@@ -149,8 +149,22 @@ class StorageService {
       const dynamicCount = classStudents.length;
       const dynamicStudentIds = classStudents.map(s => s.id);
 
+      let teacherUsername = e.teacherUsername;
+      let teacherName = e.teacherName;
+      if (!teacherUsername || teacherUsername === 'faculty') {
+        if (e.id === 'EXM-004' || e.id === 'EXM-005') {
+          teacherUsername = 'daniel.mengistu';
+          teacherName = 'Daniel Mengistu';
+        } else if (e.id === 'EXM-001' || e.id === 'EXM-002' || e.id === 'EXM-003') {
+          teacherUsername = 'bethlehem.worku';
+          teacherName = 'Bethlehem Worku';
+        }
+      }
+
       return {
         ...e,
+        teacherUsername,
+        teacherName,
         className: effectiveClassName,
         examDate: formatDisplayDate(e.examDate),
         assignedClassNames: isUnassigned
@@ -683,7 +697,7 @@ class StorageService {
 
     const gradeMatch = trimmed.match(/(\d+)/);
     const gradeLevel = gradeMatch ? parseInt(gradeMatch[1], 10) : undefined;
-    const currentUser = this.getCurrentUser();
+    const currentUser = this.getCurrentTeacher() || this.getCurrentUser();
 
     const newClass: ClassGroup = {
       id: `CLS-${Date.now().toString().slice(-4)}`,
@@ -759,7 +773,7 @@ class StorageService {
       };
     }
 
-    const currentUser = this.getCurrentUser();
+    const currentUser = this.getCurrentTeacher() || this.getCurrentUser();
     const newInvitation: ClassInvitation = {
       id: `INV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
       classId: params.classId || `CLS-${params.className.replace(/\s+/g, '-').toUpperCase()}`,
@@ -813,7 +827,7 @@ class StorageService {
       }
 
       // Update current user session if student is logged in
-      const currentUser = this.getCurrentUser();
+      const currentUser = this.getCurrentTeacher() || this.getCurrentUser();
       if (currentUser && currentUser.username.toLowerCase() === invitation.studentUsername.toLowerCase()) {
         currentUser.classId = invitation.className;
         this.saveCurrentUser(currentUser);

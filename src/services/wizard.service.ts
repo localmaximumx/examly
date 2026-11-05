@@ -94,7 +94,7 @@ class WizardService {
 
   public publishDraft(): Examination {
     const draft = this.getDraft();
-    const currentUser = storageService.getCurrentUser();
+    const currentUser = storageService.getCurrentTeacher() || storageService.getCurrentUser();
     const existing = draft.id ? storageService.getExams().find(e => e.id === draft.id) : undefined;
     const newExam: Examination = {
       id: draft.id || `EXM-${Date.now().toString().slice(-4)}`,

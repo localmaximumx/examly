@@ -16,15 +16,22 @@ import { PageHeading, Button, Badge, Panel, Stat, LatexText } from '../../compon
 import { useApp } from '../../context/AppContext';
 import { storageService } from '../../services/storage.service';
 import { examService } from '../../services/exam.service';
-import { Question, ExaminationSubmission } from '../../types';
+import { Question, ExaminationSubmission, Examination } from '../../types';
 
 export const IndividualGradingScreen: React.FC = () => {
-  const { go, selectedExamId, selectedSubmissionId } = useApp();
+  const { go, selectedExamId, selectedSubmissionId, user, dataVersion } = useApp();
   const [filterView, setFilterView] = useState<'missed' | 'all'>('missed');
 
-  // Load the target submission
+  const teacherUsername = user?.username || '';
+  const teacherExams = useMemo(() => {
+    return examService.getExamsForTeacher(teacherUsername);
+  }, [teacherUsername, dataVersion]);
+
+  const teacherExamIds = useMemo(() => new Set(teacherExams.map(e => e.id)), [teacherExams]);
+
+  // Load the target submission strictly scoped to this teacher's examinations
   const submission = useMemo<ExaminationSubmission | null>(() => {
-    const list = storageService.getSubmissions();
+    const list = storageService.getSubmissions().filter(s => teacherExamIds.has(s.examId));
     if (selectedSubmissionId) {
       const found = list.find(s => s.id === selectedSubmissionId);
       if (found) return found;
@@ -34,20 +41,20 @@ export const IndividualGradingScreen: React.FC = () => {
       if (foundForExam) return foundForExam;
     }
     return list[0] || null;
-  }, [selectedSubmissionId, selectedExamId]);
+  }, [selectedSubmissionId, selectedExamId, teacherExamIds, dataVersion]);
 
-  // Load the associated exam and questions
-  const exam = useMemo(() => {
+  // Load the associated exam
+  const exam = useMemo<Examination | null>(() => {
     if (submission?.examId) {
-      const found = examService.getExamById(submission.examId);
+      const found = teacherExams.find(e => e.id === submission.examId);
       if (found) return found;
     }
     if (selectedExamId) {
-      const found = examService.getExamById(selectedExamId);
+      const found = teacherExams.find(e => e.id === selectedExamId);
       if (found) return found;
     }
-    return examService.getAllExams()[0];
-  }, [submission, selectedExamId]);
+    return teacherExams[0] || null;
+  }, [submission, selectedExamId, teacherExams]);
 
   const questions = useMemo<Question[]>(() => {
     return exam?.questions || [];

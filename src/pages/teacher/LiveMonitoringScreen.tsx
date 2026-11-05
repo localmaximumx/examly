@@ -34,6 +34,7 @@ import { storageService } from '../../services/storage.service';
 import { gradingService, isSameClass } from '../../services/grading.service';
 import { wizardService } from '../../services/wizard.service';
 import { formatCSVFilename, downloadCSV } from '../../utils/csv.utils';
+import { Examination } from '../../types';
 
 interface ActiveExamStudent {
   requestId: string;
@@ -89,27 +90,55 @@ export const LiveMonitoringScreen: React.FC = () => {
     return examService.getExamsForTeacher(teacherUsername);
   }, [teacherUsername, dataVersion, poll]);
 
-  const exam = useMemo(() => {
-    return examService.getExamById(selectedExamId) || teacherExams[0] || examService.getAllExams()[0];
-  }, [selectedExamId, teacherExams, dataVersion, poll]);
+  const fallbackExam: Examination = useMemo(() => ({
+    id: '',
+    code: '',
+    title: 'No Examination',
+    description: '',
+    subject: '',
+    classId: '',
+    className: '',
+    assignedClassNames: [],
+    assignedStudentCount: 0,
+    assignedStudentIds: [],
+    examDate: '',
+    startTime: '',
+    duration: '0 min',
+    durationMinutes: 0,
+    totalMarks: 0,
+    instructions: '',
+    academicTerm: '',
+    status: 'Ready',
+    questions: [],
+    createdAt: '',
+    updatedAt: ''
+  }), []);
+
+  const activeTeacherExam = useMemo(() => {
+    if (!teacherExams || teacherExams.length === 0) return null;
+    return teacherExams.find(e => e.id === selectedExamId) || teacherExams[0];
+  }, [selectedExamId, teacherExams]);
+
+  const exam: Examination = activeTeacherExam || fallbackExam;
 
   // Synchronized unified timer
   const secondsRemaining = useMemo(() => {
-    return storageService.getExamRemainingSeconds(exam.id);
+    return exam.id ? storageService.getExamRemainingSeconds(exam.id) : 0;
   }, [exam.id, poll]);
 
   // Join Requests for this exact exam
   const joinRequests = useMemo(() => {
-    return storageService.getJoinRequests(exam.id);
+    return exam.id ? storageService.getJoinRequests(exam.id) : [];
   }, [exam.id, poll, dataVersion]);
 
   // Submissions for this exact exam
   const submissions = useMemo(() => {
-    return storageService.getSubmissions().filter(s => s.examId === exam.id);
+    return exam.id ? storageService.getSubmissions().filter(s => s.examId === exam.id) : [];
   }, [exam.id, poll, dataVersion]);
 
   // Classes assigned to this specific examination
   const assignedClassesList = useMemo(() => {
+    if (!exam) return [];
     const allClasses = storageService.getClasses();
     const allStudents = storageService.getStudents();
     const assignedNames = new Set<string>();
@@ -473,6 +502,27 @@ export const LiveMonitoringScreen: React.FC = () => {
     downloadCSV(csv, filename);
     notify(`Exported live session roster for ${exam.title} (${filename}).`);
   };
+
+  if (!activeTeacherExam) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <Panel title="Live Proctoring & Monitoring">
+          <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <Clock3 size={48} style={{ opacity: 0.4, marginBottom: '16px', color: 'var(--accent-blue, #6366f1)' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+              No examinations found for live monitoring
+            </h3>
+            <p style={{ maxWidth: '440px', margin: '0 auto 24px auto', fontSize: '14px', lineHeight: 1.5 }}>
+              You do not currently have any examinations assigned to your account. Create an examination or start a session to begin live proctoring.
+            </p>
+            <Button kind="primary" onClick={() => go('Create exam – general information')}>
+              Create Examination
+            </Button>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <>

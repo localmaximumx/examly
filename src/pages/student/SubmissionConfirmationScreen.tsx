@@ -9,30 +9,51 @@ import { submissionService } from '../../services/submission.service';
 export const SubmissionConfirmationScreen: React.FC = () => {
   const { go, user, selectedExamId, notify, refreshData } = useApp();
 
-  const exam = useMemo(() => {
-    return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
-  }, [selectedExamId]);
-
   const studentKey = user?.studentId || user?.username || 'STU-STUDENT';
-  const savedAnswers = useMemo(() => {
-    return storageService.getStudentExamAnswers(exam.id, studentKey);
-  }, [exam.id, studentKey]);
+  const studentExams = useMemo(() => {
+    return examService.getExamsForStudent(studentKey);
+  }, [studentKey]);
 
-  const totalQuestions = exam.questions.length > 0 ? exam.questions.length : 20;
+  const exam = useMemo(() => {
+    return examService.getExamById(selectedExamId) || studentExams[0] || null;
+  }, [selectedExamId, studentExams]);
+
+  const savedAnswers = useMemo(() => {
+    if (!exam) return {};
+    return storageService.getStudentExamAnswers(exam.id, studentKey);
+  }, [exam, studentKey]);
+
+  const totalQuestions = exam?.questions?.length || 20;
   const answeredCount = Object.keys(savedAnswers).filter(k => savedAnswers[k]).length;
   const unansweredCount = Math.max(0, totalQuestions - answeredCount);
 
   // Synchronized countdown timer
   const [secondsRemaining, setSecondsRemaining] = useState(() =>
-    storageService.getExamRemainingSeconds(exam.id)
+    exam ? storageService.getExamRemainingSeconds(exam.id) : 0
   );
 
   useEffect(() => {
+    if (!exam) return;
     const timer = setInterval(() => {
       setSecondsRemaining(storageService.getExamRemainingSeconds(exam.id));
     }, 1000);
     return () => clearInterval(timer);
-  }, [exam.id]);
+  }, [exam]);
+
+  if (!exam) {
+    return (
+      <div className="center-state">
+        <Badge tone="orange">EXAMINATION UNAVAILABLE</Badge>
+        <h1>Examination Not Found</h1>
+        <p style={{ maxWidth: '540px', margin: '0 auto 24px' }}>
+          This examination is not available for submission.
+        </p>
+        <Button kind="primary" onClick={() => go('Student home')}>
+          Back to Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   const formatTimer = (totalSec: number) => {
     const hrs = Math.floor(totalSec / 3600);

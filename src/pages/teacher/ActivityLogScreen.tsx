@@ -3,14 +3,29 @@ import { ShieldCheck, Download } from 'lucide-react';
 import { PageHeading, Panel, Badge, Button } from '../../components/common';
 import { useApp } from '../../context/AppContext';
 import { storageService } from '../../services/storage.service';
+import { examService } from '../../services/exam.service';
 import { formatCSVFilename, downloadCSV } from '../../utils/csv.utils';
 
 export const ActivityLogScreen: React.FC = () => {
-  const { dataVersion, notify } = useApp();
+  const { dataVersion, notify, user } = useApp();
+
+  const teacherUsername = user?.username || '';
+  const teacherExams = useMemo(() => examService.getExamsForTeacher(teacherUsername), [teacherUsername, dataVersion]);
+  const teacherExamIds = useMemo(() => new Set(teacherExams.map(e => e.id)), [teacherExams]);
 
   const logs = useMemo(() => {
-    return storageService.getActivityLogs();
-  }, [dataVersion]);
+    const all = storageService.getActivityLogs();
+    const currentName = (user?.name || '').toLowerCase();
+    const currentUsername = teacherUsername.toLowerCase();
+    return all.filter(l => {
+      if (l.examId) return teacherExamIds.has(l.examId);
+      if (l.user) {
+        const u = l.user.toLowerCase();
+        return u === currentName || u === currentUsername;
+      }
+      return false;
+    });
+  }, [dataVersion, teacherExamIds, teacherUsername, user]);
 
   const handleExportCSV = () => {
     const escapeCSV = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`;

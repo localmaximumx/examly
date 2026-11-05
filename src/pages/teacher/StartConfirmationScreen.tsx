@@ -5,13 +5,19 @@ import { useApp } from '../../context/AppContext';
 import { examService } from '../../services/exam.service';
 
 export const StartConfirmationScreen: React.FC = () => {
-  const { go, notify, selectedExamId, refreshData } = useApp();
+  const { go, notify, selectedExamId, refreshData, user } = useApp();
+
+  const teacherUsername = user?.username || '';
+  const teacherExams = useMemo(() => {
+    return examService.getExamsForTeacher(teacherUsername);
+  }, [teacherUsername]);
 
   const exam = useMemo(() => {
-    return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
-  }, [selectedExamId]);
+    return teacherExams.find(e => e.id === selectedExamId) || teacherExams[0] || null;
+  }, [selectedExamId, teacherExams]);
 
   const handleConfirmStart = () => {
+    if (!exam) return;
     const res = examService.startOfficialExam(exam.id);
     if (res.success) {
       refreshData();
@@ -21,6 +27,19 @@ export const StartConfirmationScreen: React.FC = () => {
       notify(res.message || 'Could not start examination.');
     }
   };
+
+  if (!exam) {
+    return (
+      <div className="center-state">
+        <Badge tone="orange">EXAMINATION NOT FOUND</Badge>
+        <h1>Examination Unavailable</h1>
+        <p>This examination could not be found or you do not have permission to start it.</p>
+        <Button kind="primary" onClick={() => go('Examination list')}>
+          Back to Examinations
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="center-state">
