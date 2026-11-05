@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { AppShell } from './components/layout/AppShell';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { getRouteForScreen } from './routes';
 import './styles.css';
 import './dark-mode.css';
@@ -114,11 +115,13 @@ const MainRouter: React.FC = () => {
 
 export function App() {
   return (
-    <BrowserRouter>
-      <AppProvider>
-        <MainRouter />
-      </AppProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AppProvider>
+          <MainRouter />
+        </AppProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
