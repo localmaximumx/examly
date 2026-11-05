@@ -8,8 +8,8 @@ import { examService } from '../../services/exam.service';
 export const StudentResultScreen: React.FC = () => {
   const { go, user, selectedExamId } = useApp();
 
-  const studentUser = user?.username || 'abel.tesfaye';
-  const studentId = user?.studentId || 'STU-1001';
+  const studentUser = user?.username || '';
+  const studentId = user?.studentId || '';
 
   const exam = useMemo(() => {
     return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
@@ -109,10 +109,10 @@ export const StudentResultScreen: React.FC = () => {
           {user?.avatarText || 'AB'}
         </div>
         <div>
-          <h2>{user?.name || submission?.studentName || 'Abel Tesfaye'}</h2>
+          <h2>{user?.name || submission?.studentName || 'Student'}</h2>
           <p>
-            {user?.studentId || submission?.studentId || 'STU-1001'} ·{' '}
-            {submission?.className || 'Grade 10A'} · {submission?.examTitle || exam.title}
+            {user?.studentId || submission?.studentId || 'N/A'} ·{' '}
+            {submission?.className || user?.classId || 'Classroom'} · {submission?.examTitle || exam.title}
           </p>
         </div>
         <Badge tone="green">
@@ -156,7 +156,7 @@ export const StudentResultScreen: React.FC = () => {
           <div className="feedback-card">
             <Sparkles size={19} />
             <p>{feedback}</p>
-            <small>— Alemu Tadesse, Lead Instructor</small>
+            <small>— Lead Instructor</small>
           </div>
         </Panel>
       </div>

@@ -13,8 +13,8 @@ export const SubmissionReceiptScreen: React.FC = () => {
     return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
   }, [selectedExamId]);
 
-  const studentId = user?.studentId || 'STU-1001';
-  const studentUsername = user?.username || 'abel.tesfaye';
+  const studentId = user?.studentId || '';
+  const studentUsername = user?.username || '';
 
   const submission = useMemo(() => {
     const list = storageService.getSubmissions();
@@ -29,7 +29,7 @@ export const SubmissionReceiptScreen: React.FC = () => {
       examId: exam.id,
       examTitle: exam.title,
       studentId: studentId,
-      studentName: user?.name || 'Abel Tesfaye',
+      studentName: user?.name || 'Student',
       studentUsername: studentUsername,
       className: user?.classId || exam.className,
       submittedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + ' · ' +

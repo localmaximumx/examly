@@ -9,8 +9,8 @@ import { formatDisplayDate } from '../../utils/date.utils';
 export const StudentHistoryScreen: React.FC = () => {
   const { go, user, setSelectedExamId, dataVersion } = useApp();
 
-  const studentUser = user?.username || 'abel.tesfaye';
-  const studentId = user?.studentId || 'STU-1001';
+  const studentUser = user?.username || '';
+  const studentId = user?.studentId || '';
 
   const submissions = useMemo(() => {
     const list = storageService.getSubmissions();

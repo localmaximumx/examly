@@ -9,17 +9,16 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
   const { login, go, notify, refreshData } = useApp();
 
   // Mode: 'login' or 'register'
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
 
   // Login form state
-  const defaultUser = role === 'Teacher' ? 'alemu.tadesse' : 'abel.tesfaye';
-  const [username, setUsername] = useState(defaultUser);
-  const [password, setPassword] = useState('examly-demo');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   // Synchronize defaults when role switches
   React.useEffect(() => {
-    setUsername(role === 'Teacher' ? 'alemu.tadesse' : 'abel.tesfaye');
-    setPassword('examly-demo');
+    setUsername('');
+    setPassword('');
   }, [role]);
 
   // Student registration form state
@@ -28,12 +27,12 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
   const [regGrade, setRegGrade] = useState('Grade 10');
   const [regSection, setRegSection] = useState('Section A');
   const [regStudentId, setRegStudentId] = useState(() => `STU-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [regPassword, setRegPassword] = useState('examly-demo');
+  const [regPassword, setRegPassword] = useState('');
 
   // Teacher registration form state
   const [regTeacherName, setRegTeacherName] = useState('');
   const [regTeacherUsername, setRegTeacherUsername] = useState('');
-  const [regTeacherPassword, setRegTeacherPassword] = useState('examly-demo');
+  const [regTeacherPassword, setRegTeacherPassword] = useState('');
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,7 +208,7 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
               className="field"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder={role === 'Teacher' ? 'e.g. alemu.tadesse' : 'e.g. abel.tesfaye'}
+              placeholder={role === 'Teacher' ? 'Enter teacher username' : 'Enter student username'}
             />
 
             <label>Password</label>
@@ -231,12 +230,12 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
                 onClick={() =>
                   notify(
                     role === 'Teacher'
-                      ? 'Teacher login: "alemu.tadesse" (password: examly-demo) or click "Create account"'
-                      : 'Student login: "abel.tesfaye" (password: examly-demo) or click "Create account"'
+                      ? 'Click "Create account" to create your new teacher profile, or sign in if already registered.'
+                      : 'Click "Create account" to register your new student profile, or sign in if already registered.'
                   )
                 }
               >
-                Need demo help?
+                Need help?
               </button>
             </div>
 

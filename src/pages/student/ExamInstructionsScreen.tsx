@@ -7,7 +7,7 @@ import { storageService } from '../../services/storage.service';
 
 export const ExamInstructionsScreen: React.FC = () => {
   const { go, selectedExamId, examTitle, user, notify } = useApp();
-  const studentId = user?.studentId || user?.username || 'STU-1001';
+  const studentId = user?.studentId || user?.username || '';
 
   const [poll, setPoll] = useState(0);
 

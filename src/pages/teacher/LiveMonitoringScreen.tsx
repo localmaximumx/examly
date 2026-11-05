@@ -83,7 +83,7 @@ export const LiveMonitoringScreen: React.FC = () => {
     };
   }, []);
 
-  const teacherUsername = user?.username || 'alemu.tadesse';
+  const teacherUsername = user?.username || '';
 
   const teacherExams = useMemo(() => {
     return examService.getExamsForTeacher(teacherUsername);

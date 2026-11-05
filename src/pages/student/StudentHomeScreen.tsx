@@ -24,7 +24,7 @@ import { formatDisplayDate } from '../../utils/date.utils';
 
 export const StudentHomeScreen: React.FC = () => {
   const { go, user, setSelectedExamId, setExamTitle, dataVersion, refreshData, notify } = useApp();
-  const studentId = user?.studentId || user?.username || 'STU-1001';
+  const studentId = user?.studentId || user?.username || '';
 
   // State to poll or refresh on storage changes
   const [pollCount, setPollCount] = useState(0);
@@ -41,7 +41,7 @@ export const StudentHomeScreen: React.FC = () => {
   }, []);
 
   const studentExams = useMemo(() => {
-    return examService.getExamsForStudent(user?.username || 'abel.tesfaye');
+    return examService.getExamsForStudent(user?.username || user?.studentId || '');
   }, [user, dataVersion, pollCount]);
 
   // Display only the last five exams on the dashboard as requested
@@ -94,10 +94,10 @@ export const StudentHomeScreen: React.FC = () => {
     if (e) e.stopPropagation();
     storageService.sendJoinRequest({
       examId,
-      studentId: user?.studentId || 'STU-1001',
-      studentName: user?.name || 'Abel Tesfaye',
-      studentUsername: user?.username || 'abel.tesfaye',
-      className: user?.classId || 'Grade 10A'
+      studentId: user?.studentId || '',
+      studentName: user?.name || 'Student',
+      studentUsername: user?.username || '',
+      className: user?.classId || 'Unassigned'
     });
     refreshData();
     notify('Permission request sent to teacher! Waiting for approval.');

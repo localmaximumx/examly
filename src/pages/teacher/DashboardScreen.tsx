@@ -19,7 +19,7 @@ import { formatDisplayDate } from '../../utils/date.utils';
 export const DashboardScreen: React.FC = () => {
   const { go, notify, user, setSelectedExamId, setExamTitle, setExamClassScope, dataVersion } = useApp();
 
-  const teacherUsername = user?.username || 'alemu.tadesse';
+  const teacherUsername = user?.username || '';
 
   // Dynamic statistics calculated exclusively for this teacher's exams
   const stats = useMemo(() => {

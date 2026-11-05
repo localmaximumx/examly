@@ -13,7 +13,7 @@ export const SubmissionConfirmationScreen: React.FC = () => {
     return examService.getExamById(selectedExamId) || examService.getAllExams()[0];
   }, [selectedExamId]);
 
-  const studentKey = user?.studentId || user?.username || 'STU-1001';
+  const studentKey = user?.studentId || user?.username || 'STU-STUDENT';
   const savedAnswers = useMemo(() => {
     return storageService.getStudentExamAnswers(exam.id, studentKey);
   }, [exam.id, studentKey]);
@@ -44,9 +44,9 @@ export const SubmissionConfirmationScreen: React.FC = () => {
   const handleConfirmSubmission = () => {
     const res = submissionService.submitExam({
       examId: exam.id,
-      studentId: user?.studentId || 'STU-1001',
-      studentName: user?.name || 'Abel Tesfaye',
-      studentUsername: user?.username || 'abel.tesfaye',
+      studentId: user?.studentId || 'STU-STUDENT',
+      studentName: user?.name || 'Student',
+      studentUsername: user?.username || 'student',
       className: user?.classId || exam.className,
       answers: savedAnswers
     });

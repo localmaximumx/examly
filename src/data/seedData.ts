@@ -2,15 +2,6 @@ import { User, Examination, Student, ClassGroup, ExaminationSubmission, Activity
 
 export const SEED_TEACHERS: User[] = [
   {
-    id: 'TCH-001',
-    username: 'alemu.tadesse',
-    password: 'examly-demo',
-    name: 'Alemu Tadesse',
-    role: 'Teacher',
-    avatarText: 'AT',
-    email: 'alemu.tadesse@examly.edu'
-  },
-  {
     id: 'TCH-002',
     username: 'bethlehem.worku',
     password: 'examly-demo',
@@ -31,7 +22,7 @@ export const SEED_TEACHERS: User[] = [
 ];
 
 export const SEED_CLASSES: ClassGroup[] = [
-  { id: 'CLS-10A', name: 'Grade 10A', academicYear: '2026/2027', studentCount: 8 },
+  { id: 'CLS-10A', name: 'Grade 10A', academicYear: '2026/2027', studentCount: 7 },
   { id: 'CLS-10B', name: 'Grade 10B', academicYear: '2026/2027', studentCount: 6 },
   { id: 'CLS-11A', name: 'Grade 11A', academicYear: '2026/2027', studentCount: 7 },
   { id: 'CLS-11B', name: 'Grade 11B', academicYear: '2026/2027', studentCount: 6 },
@@ -41,20 +32,8 @@ export const SEED_CLASSES: ClassGroup[] = [
 
 export const SEED_STUDENTS: Student[] = [
   // ==========================================
-  // Grade 10A (8 Students)
+  // Grade 10A (7 Students)
   // ==========================================
-  {
-    id: 'STU-001',
-    studentId: 'STU-1001',
-    name: 'Abel Tesfaye',
-    username: 'abel.tesfaye',
-    password: 'examly-demo',
-    className: 'Grade 10A',
-    classId: 'CLS-10A',
-    status: 'Active',
-    connectionStatus: 'Connected',
-    submissionStatus: 'Not submitted'
-  },
   {
     id: 'STU-002',
     studentId: 'STU-1002',
@@ -911,11 +890,11 @@ export const SEED_EXAMINATIONS: Examination[] = [
     classId: 'CLS-10A',
     className: 'Grade 10A, Grade 10B',
     assignedClassNames: ['Grade 10A', 'Grade 10B'],
-    teacherUsername: 'alemu.tadesse',
-    teacherName: 'Alemu Tadesse',
-    assignedStudentCount: 14,
+    teacherUsername: 'faculty',
+    teacherName: 'Faculty Lead',
+    assignedStudentCount: 13,
     assignedStudentIds: [
-      'STU-001', 'STU-002', 'STU-003', 'STU-004', 'STU-005', 'STU-006', 'STU-007', 'STU-008',
+      'STU-002', 'STU-003', 'STU-004', 'STU-005', 'STU-006', 'STU-007', 'STU-008',
       'STU-009', 'STU-010', 'STU-011', 'STU-012', 'STU-013', 'STU-014'
     ],
     examDate: 'Nov 03, 2026',
@@ -1031,8 +1010,8 @@ export const SEED_EXAMINATIONS: Examination[] = [
     classId: 'CLS-11A',
     className: 'Grade 11A',
     assignedClassNames: ['Grade 11A'],
-    teacherUsername: 'alemu.tadesse',
-    teacherName: 'Alemu Tadesse',
+    teacherUsername: 'faculty',
+    teacherName: 'Faculty Lead',
     assignedStudentCount: 7,
     assignedStudentIds: ['STU-015', 'STU-016', 'STU-017', 'STU-018', 'STU-019', 'STU-020', 'STU-021'],
     examDate: 'Nov 05, 2026',
@@ -1116,8 +1095,8 @@ export const SEED_EXAMINATIONS: Examination[] = [
     classId: '',
     className: 'Unassigned',
     assignedClassNames: [],
-    teacherUsername: 'alemu.tadesse',
-    teacherName: 'Alemu Tadesse',
+    teacherUsername: 'faculty',
+    teacherName: 'Faculty Lead',
     assignedStudentCount: 0,
     assignedStudentIds: [],
     examDate: 'Nov 08, 2026',
@@ -1188,8 +1167,8 @@ export const SEED_EXAMINATIONS: Examination[] = [
     classId: 'CLS-11A',
     className: 'Grade 11A, Grade 12A',
     assignedClassNames: ['Grade 11A', 'Grade 12A'],
-    teacherUsername: 'alemu.tadesse',
-    teacherName: 'Alemu Tadesse',
+    teacherUsername: 'faculty',
+    teacherName: 'Faculty Lead',
     assignedStudentCount: 11,
     assignedStudentIds: [
       'STU-015', 'STU-016', 'STU-017', 'STU-018', 'STU-019', 'STU-020', 'STU-021',
@@ -1263,11 +1242,11 @@ export const SEED_EXAMINATIONS: Examination[] = [
     classId: 'CLS-10A',
     className: 'Grade 10A, Grade 10B',
     assignedClassNames: ['Grade 10A', 'Grade 10B'],
-    teacherUsername: 'alemu.tadesse',
-    teacherName: 'Alemu Tadesse',
-    assignedStudentCount: 14,
+    teacherUsername: 'faculty',
+    teacherName: 'Faculty Lead',
+    assignedStudentCount: 13,
     assignedStudentIds: [
-      'STU-001', 'STU-002', 'STU-003', 'STU-004', 'STU-005', 'STU-006', 'STU-007', 'STU-008',
+      'STU-002', 'STU-003', 'STU-004', 'STU-005', 'STU-006', 'STU-007', 'STU-008',
       'STU-009', 'STU-010', 'STU-011', 'STU-012', 'STU-013', 'STU-014'
     ],
     examDate: 'Nov 02, 2026',
@@ -1358,33 +1337,10 @@ export const SEED_EXAMINATIONS: Examination[] = [
 export const SEED_SUBMISSIONS: ExaminationSubmission[] = [
   // ==============================================================
   // SUBMISSIONS FOR EXM-005 (Completed English Examination)
-  // Grade 10A (7 submissions) + Grade 10B (5 submissions) = 12 total
+  // Grade 10A (6 submissions) + Grade 10B (5 submissions) = 11 total
   // Demonstrates Grade distribution (A, B, C, D) and scoped class averages
   // ==============================================================
   // Grade 10A Submissions
-  {
-    id: 'SUB-2001',
-    examId: 'EXM-005',
-    examTitle: 'English Language & Literature Proficiency',
-    examCode: 'ENG-102',
-    studentId: 'STU-1001',
-    studentName: 'Abel Tesfaye',
-    studentUsername: 'abel.tesfaye',
-    className: 'Grade 10A',
-    submittedAt: 'Nov 02, 2026 · 09:12 AM',
-    totalQuestions: 5,
-    answeredCount: 5,
-    unansweredCount: 0,
-    status: 'Graded',
-    score: 90,
-    maxScore: 100,
-    percentage: 90,
-    grade: 'A',
-    resultsReleased: true,
-    teacherFeedback: 'Outstanding work, Abel! Strong command of grammatical mechanics and figurative language.',
-    answers: {},
-    questionGrading: {}
-  },
   {
     id: 'SUB-2002',
     examId: 'EXM-005',
@@ -1765,31 +1721,24 @@ export const SEED_SUBMISSIONS: ExaminationSubmission[] = [
 export const SEED_ACTIVITY_LOGS: ActivityLogItem[] = [
   {
     id: 'ACT-001',
-    action: 'Teacher Alemu Tadesse launched Mathematics — Midterm Assessment live session',
-    user: 'Alemu Tadesse',
+    action: 'Exam administrator launched Mathematics — Midterm Assessment live session',
+    user: 'Faculty Lead',
     timestamp: 'Today, 9:30 AM',
     color: 'teal',
     examId: 'EXM-001'
   },
   {
     id: 'ACT-002',
-    action: 'Assigned Grade 10A and Grade 10B to Mathematics — Midterm Assessment (14 students enrolled)',
-    user: 'Alemu Tadesse',
+    action: 'Assigned Grade 10A and Grade 10B to Mathematics — Midterm Assessment (13 students enrolled)',
+    user: 'Faculty Lead',
     timestamp: 'Today, 9:25 AM',
     color: 'blue',
     examId: 'EXM-001'
   },
   {
-    id: 'ACT-003',
-    action: 'Student Abel Tesfaye joined Grade 10A cohort',
-    user: 'Abel Tesfaye',
-    timestamp: 'Today, 9:00 AM',
-    color: 'teal'
-  },
-  {
     id: 'ACT-004',
     action: 'Published final assessment grades for English Language & Literature Proficiency',
-    user: 'Alemu Tadesse',
+    user: 'Faculty Lead',
     timestamp: 'Nov 02, 2026 · 12:00 PM',
     color: 'purple',
     examId: 'EXM-005'
@@ -1797,7 +1746,7 @@ export const SEED_ACTIVITY_LOGS: ActivityLogItem[] = [
   {
     id: 'ACT-005',
     action: 'Scheduled Chemistry — Chemical Bonding for Nov 12, 2026',
-    user: 'Alemu Tadesse',
+    user: 'Faculty Lead',
     timestamp: 'Nov 01, 2026 · 04:15 PM',
     color: 'orange',
     examId: 'EXM-004'
@@ -1805,7 +1754,7 @@ export const SEED_ACTIVITY_LOGS: ActivityLogItem[] = [
   {
     id: 'ACT-006',
     action: 'Added 10 new questions to the Central Question Bank',
-    user: 'Alemu Tadesse',
+    user: 'Faculty Lead',
     timestamp: 'Oct 30, 2026 · 11:30 AM',
     color: 'blue'
   }

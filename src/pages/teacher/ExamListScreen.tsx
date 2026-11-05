@@ -25,7 +25,7 @@ export const ExamListScreen: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedTab, setSelectedTab] = useState('All');
 
-  const teacherUsername = user?.username || 'alemu.tadesse';
+  const teacherUsername = user?.username || '';
 
   const filteredExams = useMemo(() => {
     return examService.filterExams(search, selectedTab, teacherUsername);

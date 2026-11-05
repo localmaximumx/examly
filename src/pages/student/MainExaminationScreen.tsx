@@ -50,7 +50,7 @@ export const MainExaminationScreen: React.FC = () => {
   const currentQ = questions[currentQuestionIndex] || questions[0];
 
   // Persistent Answers in local database
-  const studentKey = user?.studentId || user?.username || 'STU-1001';
+  const studentKey = user?.studentId || user?.username || 'STU-STUDENT';
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     return storageService.getStudentExamAnswers(exam.id, studentKey);
   });
@@ -118,9 +118,9 @@ export const MainExaminationScreen: React.FC = () => {
         const currentAns = storageService.getStudentExamAnswers(exam.id, studentKey);
         submissionService.submitExam({
           examId: exam.id,
-          studentId: user?.studentId || 'STU-1001',
-          studentName: user?.name || 'Abel Tesfaye',
-          studentUsername: user?.username || 'abel.tesfaye',
+          studentId: user?.studentId || 'STU-STUDENT',
+          studentName: user?.name || 'Student',
+          studentUsername: user?.username || 'student',
           className: user?.classId || exam.className,
           answers: currentAns
         });

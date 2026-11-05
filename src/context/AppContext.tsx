@@ -76,19 +76,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [role, setRole] = useState<UserRole>(() => (isTeacherPath ? 'Teacher' : 'Student'));
   const [user, setUser] = useState<User | null>(() => {
-    const existing = authService.getCurrentUser();
-    if (existing) return existing;
-    // Auto-login default for fluid testing
-    return isTeacherPath
-      ? authService.login('alemu.tadesse', 'Teacher').user || null
-      : authService.login('abel.tesfaye', 'Student').user || null;
+    return authService.getCurrentUser();
   });
 
   // Derive initial screen from current URL path if valid
   const [screen, setScreen] = useState<Screen>(() => {
     const routeScreen = getScreenForRoute(location.pathname);
     if (routeScreen) return routeScreen;
-    return isTeacherPath ? 'Teacher dashboard' : 'Student home';
+    return isTeacherPath ? 'Teacher login' : 'Student login';
   });
 
   // Remember last visited page for each section
@@ -224,22 +219,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRole('Teacher');
       const currentUser = authService.getCurrentUser();
       if (!currentUser || currentUser.role !== 'Teacher') {
-        const res = authService.login('alemu.tadesse', 'Teacher');
-        if (res.user) setUser(res.user);
-      } else {
-        setUser(currentUser);
+        setScreen('Teacher login');
+        navigate('/teacher/login');
+        return;
       }
+      setUser(currentUser);
       setLastTeacherScreen(matchedScreen);
       localStorage.setItem('examly_last_teacher_screen', matchedScreen);
     } else if (isStudentScreen(matchedScreen)) {
       setRole('Student');
       const currentUser = authService.getCurrentUser();
       if (!currentUser || currentUser.role !== 'Student') {
-        const res = authService.login('abel.tesfaye', 'Student');
-        if (res.user) setUser(res.user);
-      } else {
-        setUser(currentUser);
+        setScreen('Student login');
+        navigate('/student/login');
+        return;
       }
+      setUser(currentUser);
       setLastStudentScreen(matchedScreen);
       localStorage.setItem('examly_last_student_screen', matchedScreen);
     }
@@ -251,22 +246,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRole('Teacher');
       const currentUser = authService.getCurrentUser();
       if (!currentUser || currentUser.role !== 'Teacher') {
-        const res = authService.login('alemu.tadesse', 'Teacher');
-        if (res.user) setUser(res.user);
-      } else {
-        setUser(currentUser);
+        setScreen('Teacher login');
+        setMobileOpen(false);
+        navigate('/teacher/login');
+        return;
       }
+      setUser(currentUser);
       setLastTeacherScreen(next);
       localStorage.setItem('examly_last_teacher_screen', next);
     } else if (isStudentScreen(next)) {
       setRole('Student');
       const currentUser = authService.getCurrentUser();
       if (!currentUser || currentUser.role !== 'Student') {
-        const res = authService.login('abel.tesfaye', 'Student');
-        if (res.user) setUser(res.user);
-      } else {
-        setUser(currentUser);
+        setScreen('Student login');
+        setMobileOpen(false);
+        navigate('/student/login');
+        return;
       }
+      setUser(currentUser);
       setLastStudentScreen(next);
       localStorage.setItem('examly_last_student_screen', next);
     }
@@ -280,32 +277,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const currentUser = authService.getCurrentUser();
     if (nextRole === 'Teacher') {
       setRole('Teacher');
-      if (!currentUser || currentUser.role !== 'Teacher') {
-        const res = authService.login('alemu.tadesse', 'Teacher');
-        if (res.user) setUser(res.user);
-      } else {
+      if (currentUser && currentUser.role === 'Teacher') {
         setUser(currentUser);
+        const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || lastTeacherScreen || 'Teacher dashboard';
+        const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
+        setScreen(targetScreen);
+        setLastTeacherScreen(targetScreen);
+        localStorage.setItem('examly_last_teacher_screen', targetScreen);
+        navigate(getRouteForScreen(targetScreen));
+      } else {
+        setUser(null);
+        setScreen('Teacher login');
+        navigate('/teacher/login');
       }
-      const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || lastTeacherScreen || 'Teacher dashboard';
-      const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
-      setScreen(targetScreen);
-      setLastTeacherScreen(targetScreen);
-      localStorage.setItem('examly_last_teacher_screen', targetScreen);
-      navigate(getRouteForScreen(targetScreen));
     } else {
       setRole('Student');
-      if (!currentUser || currentUser.role !== 'Student') {
-        const res = authService.login('abel.tesfaye', 'Student');
-        if (res.user) setUser(res.user);
-      } else {
+      if (currentUser && currentUser.role === 'Student') {
         setUser(currentUser);
+        const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || lastStudentScreen || 'Student home';
+        const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
+        setScreen(targetScreen);
+        setLastStudentScreen(targetScreen);
+        localStorage.setItem('examly_last_student_screen', targetScreen);
+        navigate(getRouteForScreen(targetScreen));
+      } else {
+        setUser(null);
+        setScreen('Student login');
+        navigate('/student/login');
       }
-      const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || lastStudentScreen || 'Student home';
-      const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
-      setScreen(targetScreen);
-      setLastStudentScreen(targetScreen);
-      localStorage.setItem('examly_last_student_screen', targetScreen);
-      navigate(getRouteForScreen(targetScreen));
     }
   }, [navigate, lastTeacherScreen, lastStudentScreen]);
 

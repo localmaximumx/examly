@@ -21,7 +21,7 @@ import { formatCSVFilename, downloadCSV } from '../../utils/csv.utils';
 export const ResultsScreen: React.FC = () => {
   const { go, notify, selectedExamId, setSelectedExamId, dataVersion, refreshData, user } = useApp();
 
-  const teacherUsername = user?.username || 'alemu.tadesse';
+  const teacherUsername = user?.username || '';
 
   const exams = useMemo(() => {
     return examService.getExamsForTeacher(teacherUsername);

@@ -67,7 +67,7 @@ class StorageService {
 
   // Initialize seed data if not present or migrate old dummy data
   public initialize(): void {
-    const CURRENT_DATA_VERSION = 'examly_demo_showcase_v5';
+    const CURRENT_DATA_VERSION = 'examly_demo_showcase_v7_clean';
     if (localStorage.getItem('examly_data_version') !== CURRENT_DATA_VERSION) {
       this.resetToDefault();
       localStorage.setItem('examly_data_version', CURRENT_DATA_VERSION);
@@ -102,10 +102,10 @@ class StorageService {
     this.saveSubmissions(SEED_SUBMISSIONS);
     this.saveActivityLogs(SEED_ACTIVITY_LOGS);
     this.saveQuestionBank(SEED_QUESTION_BANK);
-    this.saveCurrentUser(SEED_TEACHERS[0]);
+    this.saveCurrentUser(null);
     localStorage.setItem('examly_selected_exam_id', 'EXM-001');
     localStorage.setItem('examly_selected_class_id', 'CLS-10A');
-    localStorage.setItem('examly_data_version', 'examly_demo_showcase_v5');
+    localStorage.setItem('examly_data_version', 'examly_demo_showcase_v7_clean');
   }
 
   // Exams
@@ -411,11 +411,20 @@ class StorageService {
 
   // Students & Registration
   public getStudents(): Student[] {
-    const list = this.getItem<Student[]>(STORAGE_KEYS.STUDENTS, SEED_STUDENTS);
+    let list = this.getItem<Student[]>(STORAGE_KEYS.STUDENTS, SEED_STUDENTS);
     if (!list || list.length === 0) return SEED_STUDENTS;
+    // Always filter out deleted legacy profiles
+    const cleanList = list.filter(
+      s => s.username.toLowerCase() !== 'abel.tesfaye' &&
+           !s.username.toLowerCase().includes('abebe') &&
+           s.name.toLowerCase() !== 'abel tesfaye' &&
+           !s.name.toLowerCase().includes('abebe')
+    );
+    let added = cleanList.length !== list.length;
+    list = cleanList;
+
     const existingIds = new Set(list.map(s => s.id));
     const existingUsernames = new Set(list.map(s => s.username));
-    let added = false;
     SEED_STUDENTS.forEach(seed => {
       if (!existingIds.has(seed.id) && !existingUsernames.has(seed.username)) {
         list.push(seed);
@@ -463,17 +472,23 @@ class StorageService {
   // Teachers
   public getTeachers(): User[] {
     const list = this.getItem<User[]>(STORAGE_KEYS.TEACHERS, SEED_TEACHERS);
-    let modified = false;
+    // Always filter out deleted legacy teacher profile
+    let cleanList = list.filter(
+      t => t.username.toLowerCase() !== 'alemu.tadesse' &&
+           t.name.toLowerCase() !== 'alemu tadesse'
+    );
+    let modified = cleanList.length !== list.length;
+    cleanList = cleanList.slice();
     SEED_TEACHERS.forEach(seed => {
-      if (!list.some(t => t.username.toLowerCase() === seed.username.toLowerCase())) {
-        list.push(seed);
+      if (!cleanList.some(t => t.username.toLowerCase() === seed.username.toLowerCase())) {
+        cleanList.push(seed);
         modified = true;
       }
     });
     if (modified) {
-      this.saveTeachers(list);
+      this.saveTeachers(cleanList);
     }
-    return list;
+    return cleanList;
   }
 
   public saveTeachers(teachers: User[]): void {
@@ -670,7 +685,7 @@ class StorageService {
       academicYear,
       studentCount: 0,
       gradeLevel,
-      teacherUsername: currentUser?.username || 'alemu.tadesse'
+      teacherUsername: currentUser?.username || ''
     };
 
     classes.push(newClass);
@@ -743,8 +758,8 @@ class StorageService {
       id: `INV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
       classId: params.classId || `CLS-${params.className.replace(/\s+/g, '-').toUpperCase()}`,
       className: params.className,
-      teacherName: currentUser?.name || 'Alemu Tadesse',
-      teacherUsername: currentUser?.username || 'alemu.tadesse',
+      teacherName: currentUser?.name || 'Teacher',
+      teacherUsername: currentUser?.username || '',
       studentUsername: student.username,
       studentName: student.name,
       studentId: student.studentId,
@@ -1115,7 +1130,19 @@ class StorageService {
 
   // Auth User
   public getCurrentUser(): User | null {
-    return this.getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+    const user = this.getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+    if (
+      user &&
+      (user.username.toLowerCase() === 'alemu.tadesse' ||
+        user.username.toLowerCase() === 'abel.tesfaye' ||
+        user.username.toLowerCase().includes('abebe') ||
+        user.name.toLowerCase() === 'alemu tadesse' ||
+        user.name.toLowerCase() === 'abel tesfaye')
+    ) {
+      this.saveCurrentUser(null);
+      return null;
+    }
+    return user;
   }
 
   public saveCurrentUser(user: User | null): void {

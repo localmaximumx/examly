@@ -107,8 +107,8 @@ class WizardService {
       classId: draft.classId || '',
       className: draft.className || 'Unassigned',
       assignedClassNames: draft.className && draft.className !== 'Unassigned' ? [draft.className] : [],
-      teacherUsername: existing?.teacherUsername || currentUser?.username || 'alemu.tadesse',
-      teacherName: existing?.teacherName || currentUser?.name || 'Alemu Tadesse',
+      teacherUsername: existing?.teacherUsername || currentUser?.username || '',
+      teacherName: existing?.teacherName || currentUser?.name || 'Teacher',
       assignedStudentCount: draft.className && draft.className !== 'Unassigned'
         ? storageService.getStudents().filter(s => s.className.toLowerCase() === draft.className.toLowerCase()).length
         : 0,

@@ -16,7 +16,7 @@ class ExamService {
     const all = this.getAllExams();
     if (!teacherUsername) return all;
     return all.filter(
-      e => e.teacherUsername === teacherUsername || (!e.teacherUsername && teacherUsername === 'alemu.tadesse')
+      e => !e.teacherUsername || e.teacherUsername === teacherUsername || e.teacherUsername === 'faculty'
     );
   }
 

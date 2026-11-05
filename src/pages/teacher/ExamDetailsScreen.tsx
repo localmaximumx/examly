@@ -30,6 +30,7 @@ import { formatDisplayDate } from '../../utils/date.utils';
 export const ExamDetailsScreen: React.FC = () => {
   const {
     go,
+    user,
     selectedExamId,
     setSelectedExamId,
     setExamTitle,
@@ -100,13 +101,13 @@ export const ExamDetailsScreen: React.FC = () => {
         id: clsObj?.id || clsName,
         name: clsName,
         academicYear: clsObj?.academicYear || '2026/2027',
-        teacherUsername: clsObj?.teacherUsername || exam.teacherUsername || 'alemu.tadesse',
+        teacherUsername: clsObj?.teacherUsername || exam.teacherUsername || user?.username || '',
         enrolledCount: classStudents.length,
         submissionsCount: classSubs.length,
         status
       };
     });
-  }, [allAssignedClasses, exam, dataVersion]);
+  }, [allAssignedClasses, exam, dataVersion, user]);
 
   // Available school classes not yet assigned to this exam
   const availableClassesToAdd = useMemo(() => {

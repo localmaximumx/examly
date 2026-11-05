@@ -26,7 +26,7 @@ export const StudentsClassesScreen: React.FC = () => {
   const [newClassName, setNewClassName] = useState('');
   const [newClassYear, setNewClassYear] = useState('2026/2027');
 
-  const teacherUsername = user?.username || 'alemu.tadesse';
+  const teacherUsername = user?.username || '';
 
   const classes = useMemo(() => {
     return storageService.getClasses();
