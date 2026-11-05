@@ -23,7 +23,7 @@ export const supabaseSync = {
         username: user.username.toLowerCase(),
         name: user.name,
         role: (user as User).role || (studentObj.studentId ? 'Student' : 'Teacher'),
-        password: password || user.password || 'examly-demo',
+        password: '[PROTECTED_AUTH]', // Passwords are exclusively encrypted in auth.users
         student_id: userObj.studentId || studentObj.studentId || null,
         grade_level: userObj.gradeLevel || studentObj.gradeLevel || null,
         section: userObj.section || studentObj.section || null,
