@@ -142,6 +142,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [selectedClassId]);
 
+  // Initial cloud sync from Supabase on mount
+  useEffect(() => {
+    storageService.syncFromCloud().then(() => {
+      setDataVersion(v => v + 1);
+    });
+  }, []);
+
   const closeAlert = useCallback(() => {
     setAlertState(null);
   }, []);
@@ -308,47 +315,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     navigate(targetRoute);
   }, [navigate]);
 
+  // Change portal role: signs out of current session and navigates to the requested portal login
   const changeRole = useCallback((nextRole: UserRole) => {
+    authService.logout();
+    setUser(null);
+    setActiveTeacher(null);
+    setActiveStudent(null);
+    setRole(nextRole);
+    storageService.setActiveRole(nextRole);
     if (nextRole === 'Teacher') {
-      setRole('Teacher');
-      storageService.setActiveRole('Teacher');
-      const teacherUser = storageService.getCurrentTeacher();
-      if (teacherUser) {
-        setUser(teacherUser);
-        setActiveTeacher(teacherUser);
-        const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || 'Teacher dashboard';
-        const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
-        setScreen(targetScreen);
-        setLastTeacherScreen(targetScreen);
-        localStorage.setItem('examly_last_teacher_screen', targetScreen);
-        navigate(getRouteForScreen(targetScreen));
-        notify(`Switched to Teacher: ${teacherUser.name}`);
-      } else {
-        setUser(null);
-        setScreen('Teacher login');
-        navigate('/login/teacher');
-      }
+      setScreen('Teacher login');
+      navigate('/login/teacher');
     } else {
-      setRole('Student');
-      storageService.setActiveRole('Student');
-      const studentUser = storageService.getCurrentStudent();
-      if (studentUser) {
-        setUser(studentUser);
-        setActiveStudent(studentUser);
-        const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || 'Student home';
-        const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
-        setScreen(targetScreen);
-        setLastStudentScreen(targetScreen);
-        localStorage.setItem('examly_last_student_screen', targetScreen);
-        navigate(getRouteForScreen(targetScreen));
-        notify(`Switched to Student: ${studentUser.name}`);
-      } else {
-        setUser(null);
-        setScreen('Student login');
-        navigate('/login/student');
-      }
+      setScreen('Student login');
+      navigate('/login/student');
     }
-  }, [navigate, notify]);
+  }, [navigate]);
 
   const login = useCallback(
     (username: string, loginRole: UserRole, password?: string): { success: boolean; message?: string } => {
@@ -359,6 +341,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         storageService.setActiveRole(loginRole);
         if (loginRole === 'Teacher') {
           setActiveTeacher(res.user);
+          setActiveStudent(null);
           const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || 'Teacher dashboard';
           const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
           setScreen(targetScreen);
@@ -367,6 +350,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           navigate(getRouteForScreen(targetScreen));
         } else {
           setActiveStudent(res.user);
+          setActiveTeacher(null);
           const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || 'Student home';
           const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
           setScreen(targetScreen);
@@ -387,22 +371,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = useCallback((roleToLogout?: UserRole) => {
     const targetRole = roleToLogout || role;
     authService.logout(targetRole);
+    setUser(null);
+    setActiveTeacher(null);
+    setActiveStudent(null);
     if (targetRole === 'Teacher') {
-      setActiveTeacher(null);
-      if (role === 'Teacher') {
-        setUser(null);
-        setScreen('Teacher login');
-        navigate('/login/teacher');
-      }
+      setScreen('Teacher login');
+      navigate('/login/teacher');
     } else {
-      setActiveStudent(null);
-      if (role === 'Student') {
-        setUser(null);
-        setScreen('Student login');
-        navigate('/login/student');
-      }
+      setScreen('Student login');
+      navigate('/login/student');
     }
-    notify(`Signed out of ${targetRole} portal.`);
+    notify(`Signed out successfully.`);
   }, [role, navigate, notify]);
 
   return (

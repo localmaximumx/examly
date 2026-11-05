@@ -60,10 +60,30 @@ const RootRedirect: React.FC = () => {
   return <Navigate to="/login/teacher" replace />;
 };
 
+// Security Route Guards: Strictly isolate teacher and student access
+const RequireTeacher: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const teacher = storageService.getCurrentTeacher();
+  const activeRole = storageService.getActiveRole();
+  if (!teacher || activeRole !== 'Teacher') {
+    return <Navigate to="/login/teacher" replace />;
+  }
+  return <>{children}</>;
+};
+
+const RequireStudent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const student = storageService.getCurrentStudent();
+  const activeRole = storageService.getActiveRole();
+  if (!student || activeRole !== 'Student') {
+    return <Navigate to="/login/student" replace />;
+  }
+  return <>{children}</>;
+};
+
 const TeacherRedirect: React.FC = () => {
   const teacher = storageService.getCurrentTeacher();
+  const activeRole = storageService.getActiveRole();
   const { lastTeacherScreen } = useApp();
-  if (!teacher) {
+  if (!teacher || activeRole !== 'Teacher') {
     return <Navigate to="/login/teacher" replace />;
   }
   return <Navigate to={getRouteForScreen(lastTeacherScreen || 'Teacher dashboard')} replace />;
@@ -71,8 +91,9 @@ const TeacherRedirect: React.FC = () => {
 
 const StudentRedirect: React.FC = () => {
   const student = storageService.getCurrentStudent();
+  const activeRole = storageService.getActiveRole();
   const { lastStudentScreen } = useApp();
-  if (!student) {
+  if (!student || activeRole !== 'Student') {
     return <Navigate to="/login/student" replace />;
   }
   return <Navigate to={getRouteForScreen(lastStudentScreen || 'Student home')} replace />;
@@ -90,37 +111,37 @@ const MainRouter: React.FC = () => {
       <Route path="/login/student" element={<LoginScreen role="Student" />} />
       <Route path="/student/login" element={<LoginScreen role="Student" />} />
 
-      {/* Teacher workspace routes */}
+      {/* Teacher workspace routes (Strictly protected by RequireTeacher) */}
       <Route path="/teacher" element={<TeacherRedirect />} />
-      <Route path="/teacher/dashboard" element={<AppShell><DashboardScreen /></AppShell>} />
-      <Route path="/teacher/examinations" element={<AppShell><ExamListScreen /></AppShell>} />
-      <Route path="/teacher/examinations/create/general" element={<AppShell><CreateGeneralScreen /></AppShell>} />
-      <Route path="/teacher/examinations/create/questions" element={<AppShell><CreateQuestionsScreen /></AppShell>} />
-      <Route path="/teacher/examinations/create/settings" element={<AppShell><CreateSettingsScreen /></AppShell>} />
-      <Route path="/teacher/examinations/preview" element={<AppShell><ExamPreviewScreen /></AppShell>} />
-      <Route path="/teacher/examinations/details" element={<AppShell><LiveMonitoringScreen /></AppShell>} />
-      <Route path="/teacher/examinations/start-confirmation" element={<AppShell><StartConfirmationScreen /></AppShell>} />
-      <Route path="/teacher/monitoring" element={<AppShell><LiveMonitoringScreen /></AppShell>} />
-      <Route path="/teacher/results" element={<AppShell><LiveMonitoringScreen /></AppShell>} />
-      <Route path="/teacher/grading" element={<AppShell><IndividualGradingScreen /></AppShell>} />
-      <Route path="/teacher/question-bank" element={<AppShell><QuestionBankScreen /></AppShell>} />
-      <Route path="/teacher/classes" element={<AppShell><StudentsClassesScreen /></AppShell>} />
-      <Route path="/teacher/classes/detail" element={<AppShell><ClassDetailScreen /></AppShell>} />
+      <Route path="/teacher/dashboard" element={<RequireTeacher><AppShell><DashboardScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/examinations" element={<RequireTeacher><AppShell><ExamListScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/examinations/create/general" element={<RequireTeacher><AppShell><CreateGeneralScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/examinations/create/questions" element={<RequireTeacher><AppShell><CreateQuestionsScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/examinations/create/settings" element={<RequireTeacher><AppShell><CreateSettingsScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/examinations/preview" element={<RequireTeacher><AppShell><ExamPreviewScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/examinations/details" element={<RequireTeacher><AppShell><LiveMonitoringScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/examinations/start-confirmation" element={<RequireTeacher><AppShell><StartConfirmationScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/monitoring" element={<RequireTeacher><AppShell><LiveMonitoringScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/results" element={<RequireTeacher><AppShell><LiveMonitoringScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/grading" element={<RequireTeacher><AppShell><IndividualGradingScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/question-bank" element={<RequireTeacher><AppShell><QuestionBankScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/classes" element={<RequireTeacher><AppShell><StudentsClassesScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/classes/detail" element={<RequireTeacher><AppShell><ClassDetailScreen /></AppShell></RequireTeacher>} />
       <Route path="/teacher/students" element={<Navigate to="/teacher/classes" replace />} />
-      <Route path="/teacher/reports" element={<AppShell><ReportsScreen /></AppShell>} />
-      <Route path="/teacher/settings" element={<AppShell><SettingsScreen /></AppShell>} />
-      <Route path="/teacher/activity-log" element={<AppShell><ActivityLogScreen /></AppShell>} />
+      <Route path="/teacher/reports" element={<RequireTeacher><AppShell><ReportsScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/settings" element={<RequireTeacher><AppShell><SettingsScreen /></AppShell></RequireTeacher>} />
+      <Route path="/teacher/activity-log" element={<RequireTeacher><AppShell><ActivityLogScreen /></AppShell></RequireTeacher>} />
 
-      {/* Student portal routes */}
+      {/* Student portal routes (Strictly protected by RequireStudent) */}
       <Route path="/student" element={<StudentRedirect />} />
-      <Route path="/student/home" element={<AppShell><StudentHomeScreen /></AppShell>} />
-      <Route path="/student/exam/instructions" element={<AppShell><ExamInstructionsScreen /></AppShell>} />
-      <Route path="/student/exam/take" element={<AppShell><MainExaminationScreen /></AppShell>} />
-      <Route path="/student/exam/interrupted" element={<AppShell><ConnectionInterruptionScreen /></AppShell>} />
-      <Route path="/student/exam/submit-confirmation" element={<AppShell><SubmissionConfirmationScreen /></AppShell>} />
-      <Route path="/student/exam/receipt" element={<AppShell><SubmissionReceiptScreen /></AppShell>} />
-      <Route path="/student/history" element={<AppShell><StudentHistoryScreen /></AppShell>} />
-      <Route path="/student/results" element={<AppShell><StudentResultScreen /></AppShell>} />
+      <Route path="/student/home" element={<RequireStudent><AppShell><StudentHomeScreen /></AppShell></RequireStudent>} />
+      <Route path="/student/exam/instructions" element={<RequireStudent><AppShell><ExamInstructionsScreen /></AppShell></RequireStudent>} />
+      <Route path="/student/exam/take" element={<RequireStudent><AppShell><MainExaminationScreen /></AppShell></RequireStudent>} />
+      <Route path="/student/exam/interrupted" element={<RequireStudent><AppShell><ConnectionInterruptionScreen /></AppShell></RequireStudent>} />
+      <Route path="/student/exam/submit-confirmation" element={<RequireStudent><AppShell><SubmissionConfirmationScreen /></AppShell></RequireStudent>} />
+      <Route path="/student/exam/receipt" element={<RequireStudent><AppShell><SubmissionReceiptScreen /></AppShell></RequireStudent>} />
+      <Route path="/student/history" element={<RequireStudent><AppShell><StudentHistoryScreen /></AppShell></RequireStudent>} />
+      <Route path="/student/results" element={<RequireStudent><AppShell><StudentResultScreen /></AppShell></RequireStudent>} />
 
       {/* Fallback to root */}
       <Route path="*" element={<Navigate to="/" replace />} />

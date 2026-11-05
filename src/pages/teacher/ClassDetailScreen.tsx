@@ -55,11 +55,37 @@ export const ClassDetailScreen: React.FC = () => {
     );
   }, [allStudents, selectedClass]);
 
+  // Students whose requested class matches this classroom and are pending approval
+  const pendingRequests = useMemo(() => {
+    if (!selectedClass) return [];
+    return allStudents.filter(
+      s => s.requestedClass &&
+           s.requestedClass.toLowerCase().replace(/\s+/g, '') === selectedClass.name.toLowerCase().replace(/\s+/g, '') &&
+           s.enrollmentStatus === 'Pending'
+    );
+  }, [allStudents, selectedClass]);
+
   // Real-time matched student for Search tab
   const searchedStudent = useMemo(() => {
     if (!searchQuery.trim()) return null;
     return storageService.findStudentById(searchQuery.trim()) || null;
   }, [searchQuery, allStudents]);
+
+  // Handlers for approving/declining student enrollment requests
+  const handleApproveEnrollment = (student: Student) => {
+    if (!selectedClass) return;
+    const res = storageService.approveStudentClassEnrollment(student.username, selectedClass.name);
+    notify(res.message);
+    refreshData();
+    setRefreshToggle(t => t + 1);
+  };
+
+  const handleDeclineEnrollment = (student: Student) => {
+    const res = storageService.rejectStudentClassEnrollment(student.username);
+    notify(res.message);
+    refreshData();
+    setRefreshToggle(t => t + 1);
+  };
 
   // --- Handlers ---
   const handleValidatePasteIds = () => {
@@ -193,10 +219,10 @@ export const ClassDetailScreen: React.FC = () => {
           tint="blue"
         />
         <Stat
-          label="Active accounts"
-          value={studentsInClass.filter(s => s.status === 'Active').length}
-          icon={ShieldCheck}
-          tint="teal"
+          label="Pending Applications"
+          value={pendingRequests.length}
+          icon={UserPlus}
+          tint={pendingRequests.length > 0 ? "orange" : "teal"}
         />
         <Stat
           label="Academic Year"
@@ -205,6 +231,72 @@ export const ClassDetailScreen: React.FC = () => {
           tint="purple"
         />
       </div>
+
+      {/* PENDING ENROLLMENT REQUESTS PANEL */}
+      {pendingRequests.length > 0 && (
+        <Panel
+          title={`Pending Enrollment Requests (${pendingRequests.length})`}
+          subtitle="The following students requested to join this class on registration. You must approve them before they can access examinations."
+        >
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>STUDENT</th>
+                  <th>STUDENT ID</th>
+                  <th>USERNAME</th>
+                  <th>REQUESTED CLASS</th>
+                  <th>STATUS</th>
+                  <th style={{ textAlign: 'right' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingRequests.map(s => (
+                  <tr key={s.id || s.studentId} style={{ background: 'rgba(251, 191, 36, 0.05)' }}>
+                    <td>
+                      <b>{s.name}</b>
+                    </td>
+                    <td>
+                      <Badge tone="purple" style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                        {s.studentId || s.id}
+                      </Badge>
+                    </td>
+                    <td>@{s.username}</td>
+                    <td>
+                      <Badge tone="orange" style={{ fontSize: '11px', padding: '2px 7px' }}>
+                        {s.requestedClass || selectedClass.name}
+                      </Badge>
+                    </td>
+                    <td>
+                      <Badge tone="orange">
+                        <AlertCircle size={12} style={{ verticalAlign: '-1px', marginRight: '4px' }} />
+                        Pending Approval
+                      </Badge>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '8px' }}>
+                        <Button
+                          kind="primary"
+                          onClick={() => handleApproveEnrollment(s)}
+                        >
+                          <UserCheck size={14} style={{ marginRight: '4px' }} />
+                          Approve & Enroll
+                        </Button>
+                        <Button
+                          kind="outline"
+                          onClick={() => handleDeclineEnrollment(s)}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      )}
 
       {/* ENROLLED STUDENTS ROSTER PANEL */}
       <Panel

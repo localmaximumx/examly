@@ -20,6 +20,7 @@ import {
   SEED_TEACHERS
 } from '../data/seedData';
 import { formatDisplayDate } from '../utils/date.utils';
+import { supabaseSync } from '../lib/supabaseSync';
 
 const STORAGE_KEYS = {
   EXAMS: 'examly_exams',
@@ -529,11 +530,15 @@ class StorageService {
       role: 'Teacher',
       password: data.password || 'examly-demo',
       avatarText: data.name.trim().split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
-      email: `${cleanUsername}@examly.edu`
+      email: `${cleanUsername}@examly.edu`,
+      enrollmentStatus: 'Enrolled'
     };
 
     teachers.unshift(newTeacher);
     this.saveTeachers(teachers);
+
+    // Sync to Supabase cloud
+    supabaseSync.syncUserToCloud(newTeacher, newTeacher.password);
 
     this.addActivityLog({
       action: `New teacher ${newTeacher.name} (@${newTeacher.username}) registered`,
@@ -552,13 +557,16 @@ class StorageService {
     password?: string;
     gradeLevel?: string;
     section?: string;
+    requestedClass?: string;
     className?: string;
   }): Student {
     const students = this.getStudents();
     const assignedId = data.studentId?.trim() || `STU-${Math.floor(1000 + Math.random() * 9000)}`;
-    const gradeLevel = data.gradeLevel?.trim() || (data.className?.match(/Grade\s*\d+/i)?.[0] || 'Grade 10');
-    const section = data.section?.trim() || (data.className?.replace(gradeLevel, '').trim() || 'A');
-    const finalClassName = data.className || `${gradeLevel}${section.replace(/^Section\s*/i, '')}`;
+    const gradeLevel = data.gradeLevel?.trim() || 'Grade 10';
+    const section = data.section?.trim() || 'Section A';
+    const sectionLetter = section.replace(/^Section\s*/i, '').trim();
+    const computedClass = `${gradeLevel}${sectionLetter}`;
+    const requested = data.requestedClass || computedClass;
 
     const newStudent: Student = {
       id: `STU-${Date.now().toString().slice(-4)}`,
@@ -568,7 +576,9 @@ class StorageService {
       password: data.password || 'examly-demo',
       gradeLevel: gradeLevel, // Primary profile grade level
       section: section,
-      className: finalClassName,
+      requestedClass: requested,
+      enrollmentStatus: 'Pending',
+      className: 'Unassigned', // CANNOT automatically be member of that class!
       status: 'Active',
       connectionStatus: 'Connected',
       submissionStatus: 'Not submitted'
@@ -577,14 +587,140 @@ class StorageService {
     students.unshift(newStudent);
     this.saveStudents(students);
 
+    // Automatically create a pending class invitation so teachers see it under the class
+    const invitations = this.getClassInvitations();
+    const newInvitation: ClassInvitation = {
+      id: `INV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
+      classId: `CLS-${requested.replace(/\s+/g, '-').toUpperCase()}`,
+      className: requested,
+      teacherName: 'Class Faculty',
+      teacherUsername: '',
+      studentUsername: newStudent.username,
+      studentName: newStudent.name,
+      studentId: newStudent.studentId,
+      status: 'Pending',
+      createdAt: new Date().toISOString()
+    };
+    invitations.unshift(newInvitation);
+    this.saveClassInvitations(invitations);
+
+    // Sync to Supabase cloud
+    supabaseSync.syncUserToCloud(newStudent, newStudent.password);
+
     this.addActivityLog({
-      action: `New student ${newStudent.name} (${newStudent.studentId}) registered for ${newStudent.gradeLevel} (Section ${newStudent.section})`,
+      action: `New student ${newStudent.name} (${newStudent.studentId}) registered requesting ${requested} (Pending Approval)`,
       user: newStudent.name,
       timestamp: 'Just now',
       color: 'teal'
     });
 
     return newStudent;
+  }
+
+  public approveStudentClassEnrollment(
+    studentUsername: string,
+    className: string
+  ): { success: boolean; message: string; student?: Student } {
+    const students = this.getStudents();
+    const cleanUser = studentUsername.trim().toLowerCase();
+    const student = students.find(s => s.username.toLowerCase() === cleanUser);
+    if (!student) {
+      return { success: false, message: `Student @${studentUsername} not found.` };
+    }
+
+    student.className = className;
+    student.requestedClass = className;
+    student.enrollmentStatus = 'Enrolled';
+    this.saveStudents(students);
+
+    // Update corresponding class invitations
+    const invitations = this.getClassInvitations();
+    invitations.forEach(inv => {
+      if (inv.studentUsername.toLowerCase() === cleanUser && inv.className.toLowerCase() === className.toLowerCase()) {
+        inv.status = 'Accepted';
+      }
+    });
+    this.saveClassInvitations(invitations);
+
+    // Update active session if student is currently the logged-in user
+    const cur = this.getCurrentStudent();
+    if (cur && cur.username.toLowerCase() === cleanUser) {
+      cur.className = className;
+      cur.classId = className;
+      cur.requestedClass = className;
+      cur.enrollmentStatus = 'Enrolled';
+      this.saveCurrentStudent(cur);
+      this.saveCurrentUser(cur);
+    }
+
+    // Auto-enroll in exams assigned to this classroom
+    const allExams = this.getItem<Examination[]>(STORAGE_KEYS.EXAMS, []);
+    const targetClassLower = className.toLowerCase();
+    let examsChanged = false;
+    allExams.forEach(ex => {
+      const isExamAssigned =
+        (ex.className && ex.className.toLowerCase() === targetClassLower) ||
+        (ex.assignedClassNames && ex.assignedClassNames.some(c => c.toLowerCase() === targetClassLower));
+      if (isExamAssigned) {
+        const idSet = new Set<string>(ex.assignedStudentIds || []);
+        if (student.id) idSet.add(student.id);
+        if (student.studentId) idSet.add(student.studentId);
+        ex.assignedStudentIds = Array.from(idSet);
+        examsChanged = true;
+      }
+    });
+    if (examsChanged) {
+      this.saveExams(allExams);
+    }
+
+    // Sync to Supabase cloud
+    supabaseSync.syncUserToCloud(student, student.password);
+
+    this.addActivityLog({
+      action: `Teacher approved and enrolled ${student.name} (@${student.username}) into ${className}`,
+      user: this.getCurrentTeacher()?.name || 'Teacher',
+      timestamp: 'Just now',
+      color: 'teal'
+    });
+
+    return {
+      success: true,
+      message: `Enrolled ${student.name} into ${className} successfully!`,
+      student
+    };
+  }
+
+  public rejectStudentClassEnrollment(studentUsername: string): { success: boolean; message: string } {
+    const students = this.getStudents();
+    const cleanUser = studentUsername.trim().toLowerCase();
+    const student = students.find(s => s.username.toLowerCase() === cleanUser);
+    if (!student) {
+      return { success: false, message: `Student @${studentUsername} not found.` };
+    }
+
+    student.enrollmentStatus = 'Unassigned';
+    this.saveStudents(students);
+
+    // Update corresponding class invitations
+    const invitations = this.getClassInvitations();
+    invitations.forEach(inv => {
+      if (inv.studentUsername.toLowerCase() === cleanUser) {
+        inv.status = 'Declined';
+      }
+    });
+    this.saveClassInvitations(invitations);
+
+    // Sync to Supabase cloud
+    supabaseSync.syncUserToCloud(student, student.password);
+
+    this.addActivityLog({
+      action: `Teacher declined enrollment request for ${student.name} (@${student.username})`,
+      user: this.getCurrentTeacher()?.name || 'Teacher',
+      timestamp: 'Just now',
+      color: 'orange'
+    });
+
+    return { success: true, message: `Declined request for ${student.name}.` };
   }
 
   public findStudentById(id: string): Student | undefined {
@@ -1172,6 +1308,12 @@ class StorageService {
 
   public saveCurrentTeacher(user: User | null): void {
     this.setItem(STORAGE_KEYS.CURRENT_TEACHER, user);
+    if (user) {
+      // Security: Purge any student session to prevent role leakage
+      this.setItem(STORAGE_KEYS.CURRENT_STUDENT, null);
+      this.setItem(STORAGE_KEYS.ACTIVE_ROLE, 'Teacher');
+      this.setItem(STORAGE_KEYS.CURRENT_USER, user);
+    }
   }
 
   public getCurrentStudent(): User | null {
@@ -1185,6 +1327,12 @@ class StorageService {
 
   public saveCurrentStudent(user: User | null): void {
     this.setItem(STORAGE_KEYS.CURRENT_STUDENT, user);
+    if (user) {
+      // Security: Purge any teacher session to prevent role leakage
+      this.setItem(STORAGE_KEYS.CURRENT_TEACHER, null);
+      this.setItem(STORAGE_KEYS.ACTIVE_ROLE, 'Student');
+      this.setItem(STORAGE_KEYS.CURRENT_USER, user);
+    }
   }
 
   public getActiveRole(): UserRole {
@@ -1205,20 +1353,75 @@ class StorageService {
     }
     const active = this.getActiveRole();
     if (active === 'Teacher') {
-      return this.getCurrentTeacher() || this.getCurrentStudent() || this.getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+      return this.getCurrentTeacher();
     } else {
-      return this.getCurrentStudent() || this.getCurrentTeacher() || this.getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+      return this.getCurrentStudent();
     }
   }
 
   public saveCurrentUser(user: User | null): void {
     this.setItem(STORAGE_KEYS.CURRENT_USER, user);
-    if (user?.role === 'Teacher') {
+    if (user === null) {
+      this.setItem(STORAGE_KEYS.CURRENT_TEACHER, null);
+      this.setItem(STORAGE_KEYS.CURRENT_STUDENT, null);
+    } else if (user.role === 'Teacher') {
       this.saveCurrentTeacher(user);
-      this.setActiveRole('Teacher');
-    } else if (user?.role === 'Student') {
+    } else if (user.role === 'Student') {
       this.saveCurrentStudent(user);
-      this.setActiveRole('Student');
+    }
+  }
+
+  public async syncFromCloud(): Promise<void> {
+    try {
+      const cloudUsers = await supabaseSync.fetchUsersFromCloud();
+      if (cloudUsers && cloudUsers.length > 0) {
+        const teachers = this.getTeachers();
+        const students = this.getStudents();
+        let changed = false;
+
+        cloudUsers.forEach(cu => {
+          if (cu.role === 'Teacher') {
+            if (!teachers.some(t => t.id === cu.id || t.username.toLowerCase() === cu.username.toLowerCase())) {
+              teachers.push({
+                id: cu.id,
+                username: cu.username,
+                name: cu.name,
+                role: 'Teacher',
+                password: cu.password,
+                email: cu.email,
+                avatarText: cu.avatar_text || cu.name.slice(0, 2).toUpperCase()
+              });
+              changed = true;
+            }
+          } else {
+            if (!students.some(s => s.id === cu.id || s.username.toLowerCase() === cu.username.toLowerCase())) {
+              students.push({
+                id: cu.id,
+                studentId: cu.student_id || cu.id,
+                username: cu.username,
+                name: cu.name,
+                password: cu.password,
+                gradeLevel: cu.grade_level || 'Grade 10',
+                section: cu.section || 'Section A',
+                requestedClass: cu.requested_class || undefined,
+                enrollmentStatus: cu.enrollment_status || 'Pending',
+                className: cu.class_name || 'Unassigned',
+                status: 'Active',
+                connectionStatus: 'Connected',
+                submissionStatus: 'Not submitted'
+              });
+              changed = true;
+            }
+          }
+        });
+
+        if (changed) {
+          this.saveTeachers(teachers);
+          this.saveStudents(students);
+        }
+      }
+    } catch (e) {
+      console.warn('[StorageService] syncFromCloud error:', e);
     }
   }
 

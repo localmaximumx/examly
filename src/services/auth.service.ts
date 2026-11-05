@@ -128,8 +128,11 @@ class AuthService {
         role: 'Student',
         avatarText: student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
         classId: student.className,
+        className: student.className,
         gradeLevel: student.gradeLevel,
         section: student.section,
+        requestedClass: student.requestedClass,
+        enrollmentStatus: student.enrollmentStatus || (student.className && student.className !== 'Unassigned' ? 'Enrolled' : 'Pending'),
         email: `${student.username}@examly.edu`
       };
 
@@ -181,6 +184,7 @@ class AuthService {
     password?: string;
     gradeLevel?: string;
     section?: string;
+    requestedClass?: string;
     className?: string;
   }): { success: boolean; user?: User; message?: string } {
     const cleanUsername = data.username.trim().toLowerCase();
@@ -216,6 +220,8 @@ class AuthService {
       classId: newStudent.className,
       gradeLevel: newStudent.gradeLevel,
       section: newStudent.section,
+      requestedClass: newStudent.requestedClass,
+      enrollmentStatus: newStudent.enrollmentStatus,
       email: `${newStudent.username}@examly.edu`
     };
 
@@ -236,21 +242,9 @@ class AuthService {
       });
     }
 
-    if (targetRole === 'Teacher') {
-      storageService.saveCurrentTeacher(null);
-    } else {
-      storageService.saveCurrentStudent(null);
-    }
-
-    // Check if the other role session is still kept
-    const otherRole = targetRole === 'Teacher' ? 'Student' : 'Teacher';
-    const otherUser = targetRole === 'Teacher' ? storageService.getCurrentStudent() : storageService.getCurrentTeacher();
-    if (otherUser) {
-      storageService.saveCurrentUser(otherUser);
-      storageService.setActiveRole(otherRole);
-    } else {
-      storageService.saveCurrentUser(null);
-    }
+    storageService.saveCurrentUser(null);
+    storageService.saveCurrentTeacher(null);
+    storageService.saveCurrentStudent(null);
   }
 
   public logoutAll(): void {

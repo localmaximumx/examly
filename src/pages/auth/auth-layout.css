@@ -1,0 +1,524 @@
+/* ========================================================
+   Examly Auth Layout Styles — Pixel-Matched to Figma Specs
+   ======================================================== */
+
+.examly-auth-screen {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  background-color: #0b0e14;
+  color: #f1f5f9;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Left Hero Banner (50%) */
+.examly-auth-hero {
+  flex: 1 1 50%;
+  min-height: 100vh;
+  background: linear-gradient(145deg, #0d1527 0%, #131d38 50%, #0c1326 100%);
+  padding: 56px 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.examly-auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 2;
+}
+
+.examly-auth-logo-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #4f46e5;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+}
+
+.examly-auth-brand-text h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.examly-auth-brand-text span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #94a3b8;
+  display: block;
+  margin-top: 3px;
+}
+
+/* Hero Center Content */
+.examly-auth-hero-center {
+  z-index: 2;
+  margin: auto 0;
+  max-width: 520px;
+}
+
+.examly-auth-hero-title {
+  font-size: 40px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.18;
+  letter-spacing: -1px;
+  margin: 0 0 16px 0;
+}
+
+.examly-auth-hero-subtitle {
+  font-size: 15px;
+  color: #94a3b8;
+  line-height: 1.55;
+  margin: 0 0 44px 0;
+}
+
+.examly-auth-features {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.examly-auth-feature-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.examly-auth-feature-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #818cf8;
+  display: grid;
+  place-items: center;
+}
+
+.examly-auth-feature-text b {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.examly-auth-feature-text p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Watermark SVG Cap in Background */
+.examly-auth-watermark {
+  position: absolute;
+  bottom: -40px;
+  right: -40px;
+  width: 480px;
+  height: 480px;
+  opacity: 0.12;
+  color: #4f46e5;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Right Form Panel (50%) */
+.examly-auth-form-panel {
+  flex: 1 1 50%;
+  min-height: 100vh;
+  background: #0b0e14;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 64px;
+  box-sizing: border-box;
+}
+
+.examly-auth-form-wrapper {
+  width: 100%;
+  max-width: 450px;
+}
+
+/* Top bar: Badge + Portal link */
+.examly-auth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.examly-auth-portal-badge {
+  padding: 6px 14px;
+  background: #182038;
+  border: 1px solid #243254;
+  color: #818cf8;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.examly-auth-role-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.examly-auth-role-link:hover {
+  color: #ffffff;
+}
+
+/* Heading & Subtitle */
+.examly-auth-header h1 {
+  font-size: 34px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.8px;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.examly-auth-header p {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0 0 28px 0;
+  line-height: 1.5;
+}
+
+/* Form Styles */
+.examly-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.examly-auth-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.examly-auth-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 7px;
+}
+
+.examly-auth-field label span.optional {
+  font-weight: 400;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.examly-auth-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #0e131f;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 0 14px;
+  height: 48px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.examly-auth-input-wrapper:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.examly-auth-input-icon {
+  color: #64748b;
+  margin-right: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.examly-auth-input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+}
+
+.examly-auth-input::placeholder {
+  color: #475569;
+}
+
+.examly-auth-eye-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  margin-left: 8px;
+  transition: color 0.15s ease;
+}
+
+.examly-auth-eye-btn:hover {
+  color: #94a3b8;
+}
+
+.examly-auth-helper-text {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* Two-column selectors */
+.examly-auth-two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.examly-auth-select {
+  background: #0e131f;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 0 14px;
+  height: 48px;
+  color: #ffffff;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+}
+
+.examly-auth-select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.examly-auth-select option {
+  background: #0e131f;
+  color: #ffffff;
+}
+
+/* Row with Checkbox & Forgot Password */
+.examly-auth-row-extras {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -2px;
+}
+
+.examly-auth-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.examly-auth-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+.examly-auth-forgot-link {
+  font-size: 13px;
+  color: #818cf8;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.examly-auth-forgot-link:hover {
+  color: #a5b4fc;
+}
+
+/* Primary CTA Button */
+.examly-auth-submit-btn {
+  width: 100%;
+  height: 48px;
+  background: #4f46e5;
+  color: #ffffff;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.examly-auth-submit-btn:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.examly-auth-submit-btn:active {
+  transform: translateY(0);
+}
+
+/* Divider "or" */
+.examly-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 16px 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.examly-auth-divider::before,
+.examly-auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #1e293b;
+}
+
+/* Social Button (Google) */
+.examly-auth-google-btn {
+  width: 100%;
+  height: 48px;
+  background: #0e131f;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.examly-auth-google-btn:hover {
+  background: #151c2d;
+  border-color: #334155;
+}
+
+.examly-auth-google-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #0b0e14;
+  font-weight: 900;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Footer mode switch */
+.examly-auth-footer-toggle {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.examly-auth-toggle-link {
+  color: #818cf8;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: 4px;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.examly-auth-toggle-link:hover {
+  color: #a5b4fc;
+}
+
+.examly-auth-subfooter {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 11px;
+  color: #475569;
+  letter-spacing: 0.2px;
+}
+
+/* Inline Error Banner */
+.examly-auth-error-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f87171;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .examly-auth-screen {
+    flex-direction: column;
+  }
+  .examly-auth-hero {
+    min-height: auto;
+    padding: 36px 24px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .examly-auth-hero-title {
+    font-size: 28px;
+  }
+  .examly-auth-form-panel {
+    min-height: auto;
+    padding: 36px 24px;
+  }
+  .examly-auth-watermark {
+    display: none;
+  }
+}

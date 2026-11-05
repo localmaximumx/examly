@@ -152,7 +152,11 @@ export const StudentHomeScreen: React.FC = () => {
           <Badge tone="blue">STUDENT PORTAL</Badge>
           <h2>Welcome back, {user?.name ? user.name.split(' ')[0] : 'Student'}! 👋</h2>
           <p>
-            Enrolled in <b>{user?.classId || user?.gradeLevel || 'Classroom'}</b> · Student ID: <b>{user?.studentId || 'N/A'}</b>
+            {user?.enrollmentStatus === 'Pending' ? (
+              <>Requested Section: <b>{user?.requestedClass || 'Class'}</b> <Badge tone="orange" style={{ fontSize: '10px', marginLeft: '6px' }}>Pending Approval</Badge> · Student ID: <b>{user?.studentId || 'N/A'}</b></>
+            ) : (
+              <>Enrolled in <b>{user?.className || user?.classId || 'Classroom'}</b> · Student ID: <b>{user?.studentId || 'N/A'}</b></>
+            )}
           </p>
           {activeOrUpcomingExam && activeOrUpcomingExam.status === 'Active' && isEnrolledInActiveExam && (
             <Button onClick={(e) => handleEnterExam(activeOrUpcomingExam, e)}>
@@ -167,6 +171,36 @@ export const StudentHomeScreen: React.FC = () => {
           <Sparkles className="art-spark" size={24} />
         </div>
       </div>
+
+      {/* Pending Class Enrollment Banner */}
+      {user?.enrollmentStatus === 'Pending' && (
+        <div
+          style={{
+            marginBottom: '24px',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            background: 'rgba(245, 158, 11, 0.1)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            color: '#fde68a'
+          }}
+        >
+          <div style={{ background: 'rgba(245, 158, 11, 0.2)', padding: '10px', borderRadius: '10px', color: '#fbbf24', flexShrink: 0 }}>
+            <Hourglass size={22} />
+          </div>
+          <div>
+            <strong style={{ fontSize: '15px', color: '#fbbf24', display: 'block', marginBottom: '2px' }}>
+              Class Enrollment Pending Teacher Approval
+            </strong>
+            <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.45, color: '#fde68a' }}>
+              Your enrollment request for <b>{user.requestedClass || 'your requested class'}</b> is currently under review by your teacher.
+              Examinations assigned to this class will become accessible once your teacher approves your membership.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Classroom Invitation Notifications */}
       {pendingInvitations.length > 0 && (

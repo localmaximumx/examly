@@ -13,8 +13,11 @@ export interface User {
   email?: string;
   studentId?: string; // STU-1001 for students
   classId?: string;   // Grade 10A for students
+  className?: string; // e.g. Grade 10A
   gradeLevel?: string; // e.g. Grade 10
   section?: string;    // e.g. Section B
+  requestedClass?: string; // e.g. Grade 12A
+  enrollmentStatus?: 'Pending' | 'Enrolled' | 'Unassigned';
   password?: string;
 }
 
@@ -126,7 +129,9 @@ export interface Student {
   password?: string;
   gradeLevel?: string; // Primary grade level set on registration (e.g. "Grade 10")
   section?: string;    // Section (e.g. "B" or "Section B")
-  className: string;   // Current enrolled class (e.g. "Grade 10B")
+  requestedClass?: string; // Class student requested on signup (e.g. "Grade 12A")
+  enrollmentStatus?: 'Pending' | 'Enrolled' | 'Unassigned';
+  className: string;   // Current enrolled class (e.g. "Grade 10B" or "Unassigned")
   classId?: string;
   status: 'Active' | 'Inactive';
   connectionStatus: 'Connected' | 'Disconnected';

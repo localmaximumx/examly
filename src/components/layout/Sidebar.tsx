@@ -14,8 +14,7 @@ import {
   ArrowRight,
   Home,
   LogOut,
-  MoreHorizontal,
-  ArrowRightLeft
+  MoreHorizontal
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Screen, UserRole } from '../../types';
@@ -53,11 +52,8 @@ const studentNavItems: NavItemDef[] = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { role, screen, mobileOpen, user, activeTeacher, activeStudent, go, changeRole, logout, notify } = useApp();
+  const { role, screen, mobileOpen, user, go, logout, notify } = useApp();
   const [showUserMenu, setShowUserMenu] = React.useState(false);
-
-  const otherSession = role === 'Teacher' ? activeStudent : activeTeacher;
-  const otherRoleName = role === 'Teacher' ? 'Student' : 'Teacher';
 
   // Close user dropdown menu when clicking outside
   React.useEffect(() => {
@@ -84,27 +80,37 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      <div className="role-switch">
-        <button
-          type="button"
-          className={role === 'Teacher' ? 'selected' : ''}
-          onClick={(e) => {
-            e.preventDefault();
-            changeRole('Teacher');
+      <div
+        style={{
+          margin: '0 12px 16px 12px',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          background: role === 'Teacher' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+          border: `1px solid ${role === 'Teacher' ? 'rgba(99, 102, 241, 0.28)' : 'rgba(16, 185, 129, 0.28)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            fontWeight: 800,
+            letterSpacing: '0.8px',
+            color: role === 'Teacher' ? '#a5b4fc' : '#6ee7b7'
           }}
         >
-          Teacher
-        </button>
-        <button
-          type="button"
-          className={role === 'Student' ? 'selected' : ''}
-          onClick={(e) => {
-            e.preventDefault();
-            changeRole('Student');
+          {role === 'Teacher' ? 'TEACHER WORKSPACE' : 'STUDENT PORTAL'}
+        </span>
+        <span
+          style={{
+            width: '7px',
+            height: '7px',
+            borderRadius: '50%',
+            background: role === 'Teacher' ? '#6366f1' : '#10b981',
+            boxShadow: `0 0 8px ${role === 'Teacher' ? '#6366f1' : '#10b981'}`
           }}
-        >
-          Student
-        </button>
+        />
       </div>
 
       {role === 'Teacher' ? (
@@ -228,8 +234,31 @@ export const Sidebar: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>Classroom:</span>
-                      <span style={{ fontWeight: 600, color: 'var(--accent-blue, #818cf8)' }}>
-                        {user?.classId || 'Unassigned'}
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: user?.enrollmentStatus === 'Pending' ? '#fbbf24' : 'var(--accent-blue, #818cf8)'
+                        }}
+                      >
+                        {user?.enrollmentStatus === 'Pending'
+                          ? `${user?.requestedClass || 'Class'} (Pending)`
+                          : user?.className || user?.classId || 'Unassigned'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Enrollment:</span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontWeight: 700,
+                          background: user?.enrollmentStatus === 'Pending' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                          color: user?.enrollmentStatus === 'Pending' ? '#fbbf24' : '#34d399',
+                          border: `1px solid ${user?.enrollmentStatus === 'Pending' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+                        }}
+                      >
+                        {user?.enrollmentStatus === 'Pending' ? 'Pending Approval' : 'Enrolled'}
                       </span>
                     </div>
                     {user?.gradeLevel && (
@@ -310,38 +339,6 @@ export const Sidebar: React.FC = () => {
                   Visit help center <ArrowRight size={12} />
                 </button>
               </div>
-
-              {/* Quick switch to other active session */}
-              {otherSession && (
-                <button
-                  type="button"
-                  className="user-menu-item"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    width: '100%',
-                    padding: '9px 12px',
-                    background: 'rgba(99, 102, 241, 0.12)',
-                    border: '1px solid rgba(99, 102, 241, 0.28)',
-                    color: '#a5b4fc',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    borderRadius: '6px',
-                    marginBottom: '8px'
-                  }}
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    changeRole(otherRoleName as UserRole);
-                  }}
-                >
-                  <ArrowRightLeft size={14} style={{ color: '#818cf8', flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    Switch to {otherRoleName} ({otherSession.name.split(' ')[0]})
-                  </span>
-                </button>
-              )}
 
               {/* Separator before Sign out */}
               <div style={{ height: '1px', background: 'var(--border-color, #2d3748)', margin: '8px 0' }} />
