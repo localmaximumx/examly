@@ -857,6 +857,69 @@ class StorageService {
     return { success: true, message: `Classroom "${newClass.name}" created successfully.`, classGroup: newClass };
   }
 
+  public deleteClass(classIdOrName: string): { success: boolean; message: string } {
+    const raw = (classIdOrName || '').trim();
+    if (!raw) return { success: false, message: 'Class identifier is required.' };
+
+    const classes = this.getItem<ClassGroup[]>(STORAGE_KEYS.CLASSES, SEED_CLASSES);
+    const targetIndex = classes.findIndex(
+      c => c.id.toLowerCase() === raw.toLowerCase() || c.name.toLowerCase() === raw.toLowerCase()
+    );
+
+    if (targetIndex === -1) {
+      return { success: false, message: `Classroom "${raw}" not found.` };
+    }
+
+    const targetClass = classes[targetIndex];
+    classes.splice(targetIndex, 1);
+    this.saveClasses(classes);
+
+    // Update any student who was in this class to 'Unassigned'
+    const students = this.getStudents();
+    let studentsUpdated = false;
+    students.forEach(st => {
+      if (st.className && st.className.toLowerCase() === targetClass.name.toLowerCase()) {
+        st.className = 'Unassigned';
+        st.enrollmentStatus = 'Unassigned';
+        studentsUpdated = true;
+        // Sync updated student cloud record
+        supabaseSync.syncUserToCloud(st, st.password);
+      }
+    });
+    if (studentsUpdated) {
+      this.saveStudents(students);
+    }
+
+    // Clean up invitations for this class
+    const invitations = this.getClassInvitations();
+    const remainingInvitations = invitations.filter(
+      inv => inv.className.toLowerCase() !== targetClass.name.toLowerCase() && inv.classId.toLowerCase() !== targetClass.id.toLowerCase()
+    );
+    if (remainingInvitations.length !== invitations.length) {
+      this.saveClassInvitations(remainingInvitations);
+    }
+
+    // Cloud sync removal
+    supabaseSync.deleteClassroomFromCloud(targetClass.id);
+
+    // Update any active student session if needed
+    const curStudent = this.getCurrentStudent();
+    if (curStudent && curStudent.className?.toLowerCase() === targetClass.name.toLowerCase()) {
+      curStudent.className = 'Unassigned';
+      curStudent.enrollmentStatus = 'Unassigned';
+      this.saveCurrentStudent(curStudent);
+    }
+
+    this.addActivityLog({
+      action: `Teacher deleted classroom "${targetClass.name}"`,
+      user: this.getCurrentTeacher()?.name || this.getCurrentUser()?.name || 'Teacher',
+      timestamp: 'Just now',
+      color: 'orange'
+    });
+
+    return { success: true, message: `Classroom "${targetClass.name}" deleted successfully.` };
+  }
+
   // Class Invitations
   public getClassInvitations(studentUsername?: string): ClassInvitation[] {
     const list = this.getItem<ClassInvitation[]>(STORAGE_KEYS.CLASS_INVITATIONS, []);
@@ -1144,17 +1207,72 @@ class StorageService {
 
   // Submissions
   public getSubmissions(): ExaminationSubmission[] {
-    const list = this.getItem<ExaminationSubmission[]>(STORAGE_KEYS.SUBMISSIONS, SEED_SUBMISSIONS);
-    if (!list || list.length === 0) return SEED_SUBMISSIONS;
-    const existingIds = new Set(list.map(s => s.id));
-    let added = false;
-    SEED_SUBMISSIONS.forEach(seed => {
-      if (!existingIds.has(seed.id)) {
-        list.push(seed);
-        added = true;
+    let list = this.getItem<ExaminationSubmission[]>(STORAGE_KEYS.SUBMISSIONS, SEED_SUBMISSIONS);
+    if (!list) list = [];
+    
+    // Filter out deleted legacy accounts
+    list = list.filter(s => {
+      const u = (s.studentUsername || '').toLowerCase();
+      const n = (s.studentName || '').toLowerCase();
+      return u !== 'abel.tesfaye' && !u.includes('abebe') && n !== 'abel tesfaye' && !n.includes('abebe');
+    });
+
+    // Auto-normalize and synchronize question grading with accurate scores
+    const exams = this.getItem<Examination[]>(STORAGE_KEYS.EXAMS, []);
+    let modified = false;
+
+    list.forEach(sub => {
+      const exam = exams.find(e => e.id === sub.examId);
+      if (exam && exam.questions && exam.questions.length > 0 && sub.answers && Object.keys(sub.answers).length > 0) {
+        let score = 0;
+        let maxMarks = 0;
+        const grading: Record<string, { marksAwarded: number; maxMarks: number; status: 'Correct' | 'Incorrect'; studentAnswer?: string }> = {};
+
+        exam.questions.forEach(q => {
+          const qMarks = q.marks || 1;
+          maxMarks += qMarks;
+          const rawAns = sub.answers[q.id] as any;
+          let choice = '';
+          if (typeof rawAns === 'string') {
+            choice = rawAns.trim();
+          } else if (rawAns && typeof rawAns === 'object') {
+            choice = String(rawAns.selectedOption ?? rawAns.answer ?? rawAns.id ?? '').trim();
+          }
+          if (choice.toLowerCase() === '[object object]') choice = '';
+
+          const correctKey = (q.correctAnswer || '').trim();
+          const isCorrect = Boolean(choice) && choice.toUpperCase() === correctKey.toUpperCase();
+
+          if (isCorrect) {
+            score += qMarks;
+            grading[q.id] = { marksAwarded: qMarks, maxMarks: qMarks, status: 'Correct', studentAnswer: choice };
+          } else {
+            grading[q.id] = { marksAwarded: 0, maxMarks: qMarks, status: 'Incorrect', studentAnswer: choice };
+          }
+        });
+
+        const maxScore = maxMarks || (exam.totalMarks || 100);
+        const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+        let grade = 'F';
+        if (percentage >= 85) grade = 'A';
+        else if (percentage >= 75) grade = 'B';
+        else if (percentage >= 65) grade = 'C';
+        else if (percentage >= 50) grade = 'D';
+
+        if (sub.score !== score || sub.maxScore !== maxScore || sub.percentage !== percentage || !sub.questionGrading) {
+          sub.score = score;
+          sub.maxScore = maxScore;
+          sub.percentage = percentage;
+          sub.grade = grade;
+          sub.questionGrading = grading;
+          sub.status = 'Graded';
+          sub.resultsReleased = true;
+          modified = true;
+        }
       }
     });
-    if (added) {
+
+    if (modified) {
       this.setItem(STORAGE_KEYS.SUBMISSIONS, list);
     }
     return list;
@@ -1173,6 +1291,7 @@ class StorageService {
       submissions.unshift(sub);
     }
     this.saveSubmissions(submissions);
+    supabaseSync.syncSubmissionToCloud(sub);
   }
 
   // Grade for Everyone: Teacher grades and releases results for all (or class-scoped) submissions of an exam
@@ -1197,12 +1316,19 @@ class StorageService {
           maxScore += q.marks;
           if (hasRecordedAnswers) {
             const rawAns = sub.answers[q.id] as any;
-            const studentChoice = typeof rawAns === 'string' ? rawAns : (rawAns?.selectedOption || rawAns?.answer);
+            let studentChoice = '';
+            if (typeof rawAns === 'string') {
+              studentChoice = rawAns.trim();
+            } else if (rawAns && typeof rawAns === 'object') {
+              studentChoice = String(rawAns.selectedOption ?? rawAns.answer ?? rawAns.id ?? '').trim();
+            }
+            if (studentChoice.toLowerCase() === '[object object]') studentChoice = '';
+
             if (studentChoice && q.correctAnswer && studentChoice.trim().toUpperCase() === q.correctAnswer.trim().toUpperCase()) {
               score += q.marks;
-              grading[q.id] = { marksAwarded: q.marks, maxMarks: q.marks, status: 'Correct' };
+              grading[q.id] = { marksAwarded: q.marks, maxMarks: q.marks, status: 'Correct', studentAnswer: studentChoice };
             } else {
-              grading[q.id] = { marksAwarded: 0, maxMarks: q.marks, status: 'Incorrect' };
+              grading[q.id] = { marksAwarded: 0, maxMarks: q.marks, status: 'Incorrect', studentAnswer: studentChoice };
             }
           }
         });

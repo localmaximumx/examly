@@ -1,5 +1,6 @@
 import { ExaminationSubmission, StudentAnswer } from '../types';
 import { storageService } from './storage.service';
+import { supabaseSync } from '../lib/supabaseSync';
 
 class SubmissionService {
   public getAllSubmissions(): ExaminationSubmission[] {
@@ -49,16 +50,40 @@ class SubmissionService {
     const submissionId = `EXM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const formattedAnswers: Record<string, StudentAnswer> = {};
+    let score = 0;
+    let maxMarks = 0;
+    const questionGrading: Record<string, { marksAwarded: number; maxMarks: number; status: 'Correct' | 'Incorrect'; studentAnswer?: string }> = {};
+
     exam.questions.forEach(q => {
+      const qMarks = q.marks || 1;
+      maxMarks += qMarks;
+      const rawChoice = params.answers[q.id];
+      const studentChoice = typeof rawChoice === 'string' ? rawChoice.trim().toUpperCase() : '';
+      const correctChoice = (q.correctAnswer || '').trim().toUpperCase();
+      const isCorrect = Boolean(studentChoice) && studentChoice === correctChoice;
+
       formattedAnswers[q.id] = {
         questionId: q.id,
         questionNumber: q.questionNumber,
-        selectedOption: params.answers[q.id]
+        selectedOption: studentChoice
       };
+
+      if (isCorrect) {
+        score += qMarks;
+        questionGrading[q.id] = { marksAwarded: qMarks, maxMarks: qMarks, status: 'Correct', studentAnswer: studentChoice };
+      } else {
+        questionGrading[q.id] = { marksAwarded: 0, maxMarks: qMarks, status: 'Incorrect', studentAnswer: studentChoice || '' };
+      }
     });
 
-    // Submissions start with status 'Received' and resultsReleased = false!
-    // Result is held UNTIL teacher decides to grade and release for everyone!
+    const maxScore = maxMarks || (exam.totalMarks || 100);
+    const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+    let grade = 'F';
+    if (percentage >= 85) grade = 'A';
+    else if (percentage >= 75) grade = 'B';
+    else if (percentage >= 65) grade = 'C';
+    else if (percentage >= 50) grade = 'D';
+
     const newSubmission: ExaminationSubmission = {
       id: submissionId,
       examId: exam.id,
@@ -76,11 +101,18 @@ class SubmissionService {
       totalQuestions,
       answeredCount,
       unansweredCount,
-      status: 'Received',
-      resultsReleased: false
+      score,
+      maxScore,
+      percentage,
+      grade,
+      questionGrading,
+      status: 'Graded',
+      resultsReleased: true,
+      teacherFeedback: percentage >= 75 ? 'Well done! Great performance on this assessment.' : 'Keep practicing these units.'
     };
 
     storageService.saveSubmission(newSubmission);
+    supabaseSync.syncSubmissionToCloud(newSubmission);
 
     // Update student's submission status in students list
     const students = storageService.getStudents();

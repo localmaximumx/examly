@@ -8,7 +8,8 @@ import {
   ArrowRight,
   Search,
   X,
-  School
+  School,
+  Trash2
 } from 'lucide-react';
 import { PageHeading, Button, Stat, Panel, Badge } from '../../components/common';
 import { useApp } from '../../context/AppContext';
@@ -17,7 +18,7 @@ import { examService } from '../../services/exam.service';
 import { ClassGroup } from '../../types';
 
 export const StudentsClassesScreen: React.FC = () => {
-  const { notify, user, dataVersion, refreshData, go, setSelectedClassId } = useApp();
+  const { notify, showConfirm, user, dataVersion, refreshData, go, setSelectedClassId } = useApp();
   const [search, setSearch] = useState('');
   const [refreshToggle, setRefreshToggle] = useState(0);
 
@@ -78,6 +79,22 @@ export const StudentsClassesScreen: React.FC = () => {
   const handleOpenClass = (classId: string) => {
     setSelectedClassId(classId);
     go('Class detail');
+  };
+
+  const handleDeleteClass = (c: ClassGroup) => {
+    showConfirm({
+      title: 'Delete Classroom',
+      message: `Are you sure you want to delete classroom "${c.name}"? Enrolled students will be moved to Unassigned status and invitations will be revoked.`,
+      type: 'danger',
+      confirmText: 'Delete Classroom',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        const res = storageService.deleteClass(c.id);
+        notify(res.message);
+        refreshData();
+        setRefreshToggle(t => t + 1);
+      }
+    });
   };
 
   const totalEnrolled = allStudents.filter(s => s.className && s.className !== 'Unassigned').length;
@@ -267,16 +284,39 @@ export const StudentsClassesScreen: React.FC = () => {
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary, #94a3b8)' }}>
                     Managed by @{c.teacherUsername || teacherUsername}
                   </span>
-                  <button
-                    className="text-link"
-                    style={{ fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenClass(c.id);
-                    }}
-                  >
-                    Manage Class <ArrowRight size={14} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      className="icon-btn"
+                      title={`Delete classroom "${c.name}"`}
+                      style={{
+                        color: '#ef4444',
+                        padding: '6px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        background: 'rgba(239, 68, 68, 0.08)',
+                        cursor: 'pointer',
+                        display: 'grid',
+                        placeItems: 'center',
+                        transition: 'background 0.15s ease'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClass(c);
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                    <button
+                      className="text-link"
+                      style={{ fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenClass(c.id);
+                      }}
+                    >
+                      Manage Class <ArrowRight size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );

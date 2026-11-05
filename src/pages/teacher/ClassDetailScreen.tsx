@@ -87,6 +87,23 @@ export const ClassDetailScreen: React.FC = () => {
     setRefreshToggle(t => t + 1);
   };
 
+  const handleDeleteClass = () => {
+    if (!selectedClass) return;
+    showConfirm({
+      title: 'Delete Classroom',
+      message: `Are you sure you want to delete classroom "${selectedClass.name}"? All students enrolled in this classroom will be set to Unassigned and pending invitations will be removed.`,
+      type: 'danger',
+      confirmText: 'Delete Classroom',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        const res = storageService.deleteClass(selectedClass.id);
+        notify(res.message);
+        refreshData();
+        go('Students & classes');
+      }
+    });
+  };
+
   // --- Handlers ---
   const handleValidatePasteIds = () => {
     if (!pasteIdsText.trim()) {
@@ -204,9 +221,23 @@ export const ClassDetailScreen: React.FC = () => {
         title={selectedClass.name}
         desc={`Classroom cohort management for academic year ${selectedClass.academicYear}. Add students by their unique ID to authorize them.`}
         action={
-          <Badge tone="purple" style={{ fontSize: '13px', padding: '6px 14px' }}>
-            Academic Year {selectedClass.academicYear}
-          </Badge>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Badge tone="purple" style={{ fontSize: '13px', padding: '6px 14px' }}>
+              Academic Year {selectedClass.academicYear}
+            </Badge>
+            <Button
+              kind="outline"
+              onClick={() => go('Students & classes')}
+            >
+              <ArrowLeft size={14} /> Back to classes
+            </Button>
+            <Button
+              kind="danger"
+              onClick={handleDeleteClass}
+            >
+              <Trash2 size={14} /> Delete Classroom
+            </Button>
+          </div>
         }
       />
 

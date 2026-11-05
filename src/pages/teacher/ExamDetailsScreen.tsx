@@ -39,6 +39,7 @@ export const ExamDetailsScreen: React.FC = () => {
     examClassScope,
     setExamClassScope,
     setSelectedClassId,
+    setSelectedSubmissionId,
     dataVersion,
     refreshData,
     notify,
@@ -1020,7 +1021,10 @@ export const ExamDetailsScreen: React.FC = () => {
                             {sub ? (
                               <button
                                 className="text-link"
-                                onClick={() => go('Individual result & grading')}
+                                onClick={() => {
+                                  setSelectedSubmissionId(sub.id);
+                                  go('Individual result & grading');
+                                }}
                               >
                                 Review <ArrowRight size={13} />
                               </button>

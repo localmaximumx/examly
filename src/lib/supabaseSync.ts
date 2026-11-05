@@ -95,6 +95,23 @@ export const supabaseSync = {
     }
   },
 
+  async deleteClassroomFromCloud(idOrName: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('classrooms')
+        .delete()
+        .or(`id.eq.${idOrName},name.eq.${idOrName}`);
+      if (error) {
+        console.warn('[SupabaseSync] Delete classroom warning:', error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('[SupabaseSync] Network error deleting classroom:', err);
+      return false;
+    }
+  },
+
   // --- EXAMINATIONS SYNC ---
   async syncExamToCloud(exam: Examination): Promise<boolean> {
     try {

@@ -205,6 +205,7 @@ export interface ExaminationSubmission {
     maxMarks: number;
     status: 'Correct' | 'Incorrect';
     feedback?: string;
+    studentAnswer?: string;
   }>;
 }
 

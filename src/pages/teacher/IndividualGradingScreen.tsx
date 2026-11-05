@@ -78,51 +78,55 @@ export const IndividualGradingScreen: React.FC = () => {
 
     return questions.map((q, idx) => {
       // 1. Explicit answer from submission if available
+      let studentAns = '';
       if (submission.answers && submission.answers[q.id] !== undefined) {
-        const studentAns = String(submission.answers[q.id]).trim().toUpperCase();
-        const correctKey = (q.correctAnswer || '').trim().toUpperCase();
-        const isCorrect = studentAns === correctKey;
-        return {
-          question: q,
-          index: idx + 1,
-          studentAnswer: studentAns,
-          isCorrect,
-          marksAwarded: isCorrect ? q.marks : 0
-        };
+        const rawAns = submission.answers[q.id] as any;
+        if (typeof rawAns === 'string') {
+          studentAns = rawAns.trim();
+        } else if (rawAns && typeof rawAns === 'object') {
+          studentAns = String(rawAns.selectedOption ?? rawAns.answer ?? rawAns.id ?? '').trim();
+        }
       }
 
-      // 2. Question grading record if available
-      if (submission.questionGrading && submission.questionGrading[q.id] !== undefined) {
+      if (!studentAns && submission.questionGrading && submission.questionGrading[q.id] !== undefined) {
         const qg = submission.questionGrading[q.id] as any;
-        const isCorrect = typeof qg === 'object' ? (qg.status === 'Correct' || Boolean(qg.isCorrect) || qg.marksAwarded > 0) : qg > 0;
-        const studentAns =
-          typeof qg === 'object' && qg.studentAnswer
-            ? String(qg.studentAnswer)
-            : isCorrect
-            ? q.correctAnswer || 'A'
-            : q.options?.find(o => o.id !== q.correctAnswer)?.id || 'B';
-        return {
-          question: q,
-          index: idx + 1,
-          studentAnswer: studentAns,
-          isCorrect,
-          marksAwarded: isCorrect ? q.marks : 0
-        };
+        if (typeof qg === 'object' && qg.studentAnswer) {
+          studentAns = String(qg.studentAnswer).trim();
+        }
       }
 
-      // 3. Realistic deterministic allocation matching exact score
-      const isMissed = idx >= totalQuestions - targetMissed;
-      const isCorrect = !isMissed;
-      const studentAns = isCorrect
-        ? q.correctAnswer || 'A'
-        : q.options?.find(o => o.id !== q.correctAnswer)?.id || (q.correctAnswer === 'A' ? 'B' : 'A');
+      if (studentAns.toLowerCase() === '[object object]') {
+        studentAns = '';
+      }
+
+      const correctKey = (q.correctAnswer || '').trim();
+      let isCorrect = false;
+      let marksAwarded = 0;
+
+      if (studentAns) {
+        isCorrect = studentAns.toUpperCase() === correctKey.toUpperCase();
+        marksAwarded = isCorrect ? q.marks : 0;
+      } else if (submission.questionGrading && submission.questionGrading[q.id] !== undefined) {
+        const qg = submission.questionGrading[q.id] as any;
+        isCorrect = typeof qg === 'object' ? (qg.status === 'Correct' || Boolean(qg.isCorrect) || qg.marksAwarded > 0) : qg > 0;
+        marksAwarded = isCorrect ? q.marks : 0;
+        studentAns = isCorrect ? correctKey : (q.options?.find(o => o.id.toUpperCase() !== correctKey.toUpperCase())?.id || 'B');
+      } else {
+        // Fallback realistic deterministic allocation matching exact score
+        const isMissed = idx >= totalQuestions - targetMissed;
+        isCorrect = !isMissed;
+        marksAwarded = isCorrect ? q.marks : 0;
+        studentAns = isCorrect
+          ? correctKey || 'A'
+          : q.options?.find(o => o.id.toUpperCase() !== correctKey.toUpperCase())?.id || (correctKey === 'A' ? 'B' : 'A');
+      }
 
       return {
         question: q,
         index: idx + 1,
         studentAnswer: studentAns,
         isCorrect,
-        marksAwarded: isCorrect ? q.marks : 0
+        marksAwarded
       };
     });
   }, [submission, questions, exam]);
@@ -340,8 +344,12 @@ export const IndividualGradingScreen: React.FC = () => {
             (filterView === 'missed' ? missedQuestions : evaluatedQuestions).map(item => {
               const q = item.question;
               const isCorrect = item.isCorrect;
-              const studentOpt = q.options?.find(o => o.id === item.studentAnswer);
-              const correctOpt = q.options?.find(o => o.id === q.correctAnswer);
+              const studentOpt = q.options?.find(
+                o => o.id.trim().toUpperCase() === item.studentAnswer.trim().toUpperCase()
+              );
+              const correctOpt = q.options?.find(
+                o => o.id.trim().toUpperCase() === (q.correctAnswer || '').trim().toUpperCase()
+              );
 
               return (
                 <div
@@ -441,8 +449,10 @@ export const IndividualGradingScreen: React.FC = () => {
                           <>
                             <b>Option {studentOpt.id}:</b> <LatexText text={studentOpt.text} />
                           </>
+                        ) : item.studentAnswer && item.studentAnswer.toLowerCase() !== '[object object]' ? (
+                          item.studentAnswer
                         ) : (
-                          item.studentAnswer || 'No response'
+                          'No response'
                         )}
                       </div>
                     </div>
