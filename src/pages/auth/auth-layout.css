@@ -507,7 +507,7 @@
   }
   .examly-auth-hero {
     min-height: auto;
-    padding: 36px 24px;
+    padding: 32px 24px;
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
@@ -516,9 +516,52 @@
   }
   .examly-auth-form-panel {
     min-height: auto;
-    padding: 36px 24px;
+    padding: 32px 24px;
   }
   .examly-auth-watermark {
     display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .examly-auth-hero {
+    padding: 20px 20px 18px;
+    background: #0d1527;
+  }
+  /* On mobile phones, hide the redundant bulky feature marketing list so the form is above the fold */
+  .examly-auth-hero-center,
+  .examly-auth-hero-footer {
+    display: none !important;
+  }
+  .examly-auth-brand {
+    justify-content: center;
+  }
+  .examly-auth-form-panel {
+    padding: 24px 18px max(32px, env(safe-area-inset-bottom));
+  }
+  .examly-auth-form-box {
+    max-width: 100%;
+  }
+  .examly-auth-input,
+  .examly-auth-select {
+    min-height: 48px !important;
+    font-size: 16px !important; /* Critical: eliminates iOS Safari auto-zoom on input focus */
+  }
+  .examly-auth-submit-btn {
+    min-height: 48px !important;
+    font-size: 15px !important;
+  }
+  .examly-auth-submit-btn:active {
+    transform: scale(0.98);
+  }
+  .examly-auth-role-btn {
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .examly-auth-google-btn {
+    min-height: 46px;
+  }
+  .examly-auth-input-icon {
+    width: 44px;
   }
 }

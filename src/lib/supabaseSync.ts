@@ -13,6 +13,11 @@ export const supabaseSync = {
     try {
       const studentObj = user as Student;
       const userObj = user as User;
+      const cleanUsername = user.username.toLowerCase().replace(/[^a-z0-9_.]/g, '');
+      const validEmail = (userObj.email && userObj.email.includes('@') && !userObj.email.endsWith('.edu'))
+        ? userObj.email
+        : `${cleanUsername}@gmail.com`;
+
       const payload = {
         id: user.id,
         username: user.username.toLowerCase(),
@@ -26,17 +31,39 @@ export const supabaseSync = {
         enrollment_status: userObj.enrollmentStatus || studentObj.enrollmentStatus || (userObj.role === 'Teacher' ? 'Enrolled' : 'Pending'),
         class_name: userObj.className || studentObj.className || 'Unassigned',
         class_id: userObj.classId || studentObj.classId || null,
-        email: userObj.email || `${user.username}@examly.edu`,
+        email: validEmail,
         avatar_text: userObj.avatarText || user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
         updated_at: new Date().toISOString()
       };
 
+      // 1. Upsert into public.users table (viewable under Table Editor > users)
       const { error } = await supabase.from('users').upsert(payload, { onConflict: 'id' });
       if (error) {
         console.warn('[SupabaseSync] User upsert warning:', error.message);
-        return false;
       }
-      return true;
+
+      // 2. Also register in Supabase Auth (viewable under Authentication > Users)
+      try {
+        const authPassword = password || user.password || 'Examly2026!Secure';
+        await supabase.auth.signUp({
+          email: validEmail,
+          password: authPassword,
+          options: {
+            data: {
+              name: user.name,
+              role: payload.role,
+              username: user.username,
+              student_id: payload.student_id,
+              class_name: payload.class_name
+            }
+          }
+        });
+      } catch (authErr) {
+        // Auth notice (may already exist or rate limited)
+        console.warn('[SupabaseSync] Auth registration notice:', authErr);
+      }
+
+      return !error;
     } catch (err) {
       console.warn('[SupabaseSync] Network error syncing user:', err);
       return false;

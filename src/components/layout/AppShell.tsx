@@ -6,10 +6,17 @@ import { useApp } from '../../context/AppContext';
 import { CustomAlertModal } from '../common';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { toast, alertState, closeAlert } = useApp();
+  const { toast, alertState, closeAlert, mobileOpen, setMobileOpen } = useApp();
 
   return (
     <div className="app-shell">
+      {mobileOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
       <Sidebar />
       <main className="main-area">
         <Topbar />

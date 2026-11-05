@@ -62,7 +62,7 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
     setErrorMessage(null);
     const cleanUsername = username.trim();
     if (!cleanUsername) {
-      const msg = role === 'Teacher' ? 'Please enter your username or email.' : 'Please enter your username.';
+      const msg = role === 'Teacher' ? 'Please enter your username or email.' : 'Please enter your Student ID.';
       setErrorMessage(msg);
       return;
     }
@@ -115,9 +115,10 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
       return;
     }
 
-    notify(`Student account created! Requested enrollment for ${requestedClass}.`);
+    const assignedId = res.user?.studentId || 'assigned';
+    notify(`Student account created! Your Student ID is ${assignedId}. Requested enrollment for ${requestedClass}.`);
     // Sign in automatically
-    login(regUsername.trim(), 'Student', regPassword);
+    login(assignedId, 'Student', regPassword);
   };
 
   // Handle Teacher Registration
@@ -357,11 +358,11 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
             <form className="examly-auth-form" onSubmit={handleLoginSubmit}>
               <div className="examly-auth-field">
                 <label>
-                  {role === 'Teacher' ? 'Username or Email' : 'Username'}
+                  {role === 'Teacher' ? 'Username or Email' : 'Student ID'}
                 </label>
                 <div className="examly-auth-input-wrapper">
                   <div className="examly-auth-input-icon">
-                    <User size={18} />
+                    {role === 'Teacher' ? <User size={18} /> : <Hash size={18} />}
                   </div>
                   <input
                     type="text"
@@ -369,11 +370,11 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
                     placeholder={
                       role === 'Teacher'
                         ? 'e.g. alex.miller or teacher@school.edu'
-                        : 'e.g. jdoe or student ID'
+                        : 'e.g. STU-1001 or STU-7205'
                     }
                     value={username}
                     onChange={e => setUsername(e.target.value)}
-                    autoComplete="username"
+                    autoComplete={role === 'Teacher' ? 'username' : 'off'}
                   />
                 </div>
               </div>

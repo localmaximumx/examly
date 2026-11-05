@@ -112,3 +112,79 @@
   border: 1.5px solid var(--bg-card, #1e2433);
 }
 
+/* ========================================================
+   Mobile-Gesture UX & Touch Targets (44px min rule)
+   ======================================================== */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 14, 20, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 25;
+  cursor: pointer;
+  animation: backdropFadeIn 0.2s ease-out;
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 800px) {
+  .sidebar {
+    z-index: 30 !important;
+  }
+  .nav-item {
+    min-height: 44px;
+    font-size: 13px !important;
+    padding: 10px 14px !important;
+    gap: 12px !important;
+  }
+  .btn {
+    min-height: 44px;
+    padding: 11px 16px;
+  }
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+  }
+  .mobile-menu {
+    width: 44px;
+    height: 44px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #2b354d);
+    background: var(--bg-card, #1e2433);
+    color: var(--text-primary, #fff);
+  }
+  .mobile-menu:active {
+    transform: scale(0.96);
+  }
+}
+
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents auto-zooming in iOS Safari */
+  }
+  .answer-option {
+    min-height: 48px;
+    padding: 12px 14px;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .content {
+    padding: 14px 12px 48px !important;
+  }
+}
+
+

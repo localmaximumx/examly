@@ -394,7 +394,7 @@ export const Sidebar: React.FC = () => {
               <small style={{ color: 'var(--text-secondary, #94a3b8)', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 {role === 'Teacher'
                   ? `Teacher · @${user?.username || 'teacher'}`
-                  : `Student · @${user?.username || 'student'} · ${user?.classId || user?.gradeLevel || 'Class'}`}
+                  : `ID: ${user?.studentId || user?.username || 'student'} · ${user?.classId || user?.gradeLevel || 'Class'}`}
               </small>
             </div>
             <button

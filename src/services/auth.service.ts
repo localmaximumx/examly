@@ -85,14 +85,21 @@ class AuthService {
       });
       return { success: true, user };
     } else {
-      // Find in local student database
+      // Find in local student database: match Student ID first, then ID, then username for fallback
       const students = storageService.getStudents();
-      const student = students.find(s => s.username.toLowerCase() === cleanUsername);
+      const student = students.find(
+        s =>
+          (s.studentId && s.studentId.trim().toLowerCase() === cleanUsername) ||
+          (s.id && s.id.trim().toLowerCase() === cleanUsername) ||
+          s.username.trim().toLowerCase() === cleanUsername
+      );
 
       if (!student) {
         // Check if username belongs to a Teacher account
         const teachers = storageService.getTeachers();
-        const asTeacher = teachers.find(t => t.username.toLowerCase() === cleanUsername);
+        const asTeacher = teachers.find(
+          t => t.username.trim().toLowerCase() === cleanUsername || (t.email && t.email.trim().toLowerCase() === cleanUsername)
+        );
         if (asTeacher) {
           return {
             success: false,
@@ -101,7 +108,7 @@ class AuthService {
         }
         return {
           success: false,
-          message: `Username "${username}" does not exist. Please check your username or click "Create account".`
+          message: `Student ID "${username}" was not found. Please check your Student ID or click "Create account".`
         };
       }
 
