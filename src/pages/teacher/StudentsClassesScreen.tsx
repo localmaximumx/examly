@@ -284,39 +284,16 @@ export const StudentsClassesScreen: React.FC = () => {
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary, #94a3b8)' }}>
                     Managed by @{c.teacherUsername || teacherUsername}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button
-                      className="icon-btn"
-                      title={`Delete classroom "${c.name}"`}
-                      style={{
-                        color: '#ef4444',
-                        padding: '6px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(239, 68, 68, 0.25)',
-                        background: 'rgba(239, 68, 68, 0.08)',
-                        cursor: 'pointer',
-                        display: 'grid',
-                        placeItems: 'center',
-                        transition: 'background 0.15s ease'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClass(c);
-                      }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                    <button
-                      className="text-link"
-                      style={{ fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenClass(c.id);
-                      }}
-                    >
-                      Manage Class <ArrowRight size={14} />
-                    </button>
-                  </div>
+                  <button
+                    className="text-link"
+                    style={{ fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenClass(c.id);
+                    }}
+                  >
+                    Manage Class <ArrowRight size={14} />
+                  </button>
                 </div>
               </div>
             );

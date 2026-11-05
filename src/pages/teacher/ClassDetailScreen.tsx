@@ -221,7 +221,7 @@ export const ClassDetailScreen: React.FC = () => {
         title={selectedClass.name}
         desc={`Classroom cohort management for academic year ${selectedClass.academicYear}. Add students by their unique ID to authorize them.`}
         action={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <Badge tone="purple" style={{ fontSize: '13px', padding: '6px 14px' }}>
               Academic Year {selectedClass.academicYear}
             </Badge>
@@ -230,12 +230,6 @@ export const ClassDetailScreen: React.FC = () => {
               onClick={() => go('Students & classes')}
             >
               <ArrowLeft size={14} /> Back to classes
-            </Button>
-            <Button
-              kind="danger"
-              onClick={handleDeleteClass}
-            >
-              <Trash2 size={14} /> Delete Classroom
             </Button>
           </div>
         }
@@ -712,6 +706,33 @@ export const ClassDetailScreen: React.FC = () => {
           </div>
         )}
       </div>
-</>
+
+      {/* Bottom Danger Action Bar — Delete Classroom placed at bottom right corner */}
+      <div
+        style={{
+          marginTop: '36px',
+          paddingTop: '20px',
+          borderTop: '1px solid var(--border-color, #2b354d)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}
+      >
+        <div style={{ fontSize: '13px', color: 'var(--text-secondary, #94a3b8)' }}>
+          Permanently remove <b>{selectedClass.name}</b> and unassign enrolled students from this cohort.
+        </div>
+        <div>
+          <Button
+            kind="danger"
+            onClick={handleDeleteClass}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Trash2 size={14} /> Delete Classroom
+          </Button>
+        </div>
+      </div>
+    </>
   );
 };
