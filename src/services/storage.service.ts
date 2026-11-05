@@ -7,6 +7,7 @@ import {
   ActivityLogItem,
   Question,
   User,
+  UserRole,
   ExamJoinRequest
 } from '../types';
 import {
@@ -30,6 +31,9 @@ const STORAGE_KEYS = {
   ACTIVITY_LOGS: 'examly_activity_logs',
   QUESTION_BANK: 'examly_question_bank',
   CURRENT_USER: 'examly_current_user',
+  CURRENT_TEACHER: 'examly_current_teacher',
+  CURRENT_STUDENT: 'examly_current_student',
+  ACTIVE_ROLE: 'examly_active_role',
   JOIN_REQUESTS: 'examly_join_requests',
   STUDENT_ANSWERS: 'examly_student_answers',
   SETTINGS: 'examly_settings'
@@ -103,6 +107,8 @@ class StorageService {
     this.saveActivityLogs(SEED_ACTIVITY_LOGS);
     this.saveQuestionBank(SEED_QUESTION_BANK);
     this.saveCurrentUser(null);
+    this.saveCurrentTeacher(null);
+    this.saveCurrentStudent(null);
     localStorage.setItem('examly_selected_exam_id', 'EXM-001');
     localStorage.setItem('examly_selected_class_id', 'CLS-10A');
     localStorage.setItem('examly_data_version', 'examly_demo_showcase_v7_clean');
@@ -1128,25 +1134,78 @@ class StorageService {
     this.saveActivityLogs(logs.slice(0, 100));
   }
 
-  // Auth User
-  public getCurrentUser(): User | null {
-    const user = this.getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
-    if (
-      user &&
-      (user.username.toLowerCase() === 'alemu.tadesse' ||
-        user.username.toLowerCase() === 'abel.tesfaye' ||
-        user.username.toLowerCase().includes('abebe') ||
-        user.name.toLowerCase() === 'alemu tadesse' ||
-        user.name.toLowerCase() === 'abel tesfaye')
-    ) {
-      this.saveCurrentUser(null);
+  private isBannedUser(user: User | null): boolean {
+    if (!user) return false;
+    const lowerUser = (user.username || '').toLowerCase();
+    const lowerName = (user.name || '').toLowerCase();
+    return (
+      lowerUser === 'alemu.tadesse' ||
+      lowerUser === 'abel.tesfaye' ||
+      lowerUser.includes('abebe') ||
+      lowerName === 'alemu tadesse' ||
+      lowerName === 'abel tesfaye'
+    );
+  }
+
+  public getCurrentTeacher(): User | null {
+    const user = this.getItem<User | null>(STORAGE_KEYS.CURRENT_TEACHER, null);
+    if (this.isBannedUser(user)) {
+      this.saveCurrentTeacher(null);
       return null;
     }
     return user;
   }
 
+  public saveCurrentTeacher(user: User | null): void {
+    this.setItem(STORAGE_KEYS.CURRENT_TEACHER, user);
+  }
+
+  public getCurrentStudent(): User | null {
+    const user = this.getItem<User | null>(STORAGE_KEYS.CURRENT_STUDENT, null);
+    if (this.isBannedUser(user)) {
+      this.saveCurrentStudent(null);
+      return null;
+    }
+    return user;
+  }
+
+  public saveCurrentStudent(user: User | null): void {
+    this.setItem(STORAGE_KEYS.CURRENT_STUDENT, user);
+  }
+
+  public getActiveRole(): UserRole {
+    return this.getItem<UserRole>(STORAGE_KEYS.ACTIVE_ROLE, 'Teacher');
+  }
+
+  public setActiveRole(role: UserRole): void {
+    this.setItem(STORAGE_KEYS.ACTIVE_ROLE, role);
+  }
+
+  // Auth User
+  public getCurrentUser(roleHint?: UserRole): User | null {
+    if (roleHint === 'Teacher') {
+      return this.getCurrentTeacher();
+    }
+    if (roleHint === 'Student') {
+      return this.getCurrentStudent();
+    }
+    const active = this.getActiveRole();
+    if (active === 'Teacher') {
+      return this.getCurrentTeacher() || this.getCurrentStudent() || this.getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+    } else {
+      return this.getCurrentStudent() || this.getCurrentTeacher() || this.getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+    }
+  }
+
   public saveCurrentUser(user: User | null): void {
     this.setItem(STORAGE_KEYS.CURRENT_USER, user);
+    if (user?.role === 'Teacher') {
+      this.saveCurrentTeacher(user);
+      this.setActiveRole('Teacher');
+    } else if (user?.role === 'Student') {
+      this.saveCurrentStudent(user);
+      this.setActiveRole('Student');
+    }
   }
 
   // Student in-progress exam answers

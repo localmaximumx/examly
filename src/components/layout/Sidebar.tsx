@@ -14,10 +14,11 @@ import {
   ArrowRight,
   Home,
   LogOut,
-  MoreHorizontal
+  MoreHorizontal,
+  ArrowRightLeft
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { Screen } from '../../types';
+import { Screen, UserRole } from '../../types';
 
 interface NavItemDef {
   name: Screen;
@@ -52,8 +53,11 @@ const studentNavItems: NavItemDef[] = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { role, screen, mobileOpen, user, go, changeRole, logout, notify } = useApp();
+  const { role, screen, mobileOpen, user, activeTeacher, activeStudent, go, changeRole, logout, notify } = useApp();
   const [showUserMenu, setShowUserMenu] = React.useState(false);
+
+  const otherSession = role === 'Teacher' ? activeStudent : activeTeacher;
+  const otherRoleName = role === 'Teacher' ? 'Student' : 'Teacher';
 
   // Close user dropdown menu when clicking outside
   React.useEffect(() => {
@@ -307,6 +311,38 @@ export const Sidebar: React.FC = () => {
                 </button>
               </div>
 
+              {/* Quick switch to other active session */}
+              {otherSession && (
+                <button
+                  type="button"
+                  className="user-menu-item"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '9px 12px',
+                    background: 'rgba(99, 102, 241, 0.12)',
+                    border: '1px solid rgba(99, 102, 241, 0.28)',
+                    color: '#a5b4fc',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    marginBottom: '8px'
+                  }}
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    changeRole(otherRoleName as UserRole);
+                  }}
+                >
+                  <ArrowRightLeft size={14} style={{ color: '#818cf8', flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    Switch to {otherRoleName} ({otherSession.name.split(' ')[0]})
+                  </span>
+                </button>
+              )}
+
               {/* Separator before Sign out */}
               <div style={{ height: '1px', background: 'var(--border-color, #2d3748)', margin: '8px 0' }} />
 
@@ -330,10 +366,10 @@ export const Sidebar: React.FC = () => {
                 }}
                 onClick={() => {
                   setShowUserMenu(false);
-                  logout();
+                  logout(role);
                 }}
               >
-                <LogOut size={15} /> Sign out
+                <LogOut size={15} /> Sign out ({role})
               </button>
             </div>
           )}

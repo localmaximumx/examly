@@ -4,6 +4,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { AppShell } from './components/layout/AppShell';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { getRouteForScreen } from './routes';
+import { storageService } from './services/storage.service';
 import './styles.css';
 import './dark-mode.css';
 import './typography.css';
@@ -39,25 +40,39 @@ import { StudentHistoryScreen } from './pages/student/StudentHistoryScreen';
 import { StudentResultScreen } from './pages/student/StudentResultScreen';
 
 const RootRedirect: React.FC = () => {
-  const { user, role, lastTeacherScreen, lastStudentScreen } = useApp();
-  if (!user) {
-    return <Navigate to={role === 'Teacher' ? '/login/teacher' : '/login/student'} replace />;
+  const activeRole = storageService.getActiveRole();
+  const teacher = storageService.getCurrentTeacher();
+  const student = storageService.getCurrentStudent();
+  const { lastTeacherScreen, lastStudentScreen } = useApp();
+
+  if (activeRole === 'Teacher' && teacher) {
+    return <Navigate to={getRouteForScreen(lastTeacherScreen || 'Teacher dashboard')} replace />;
   }
-  const target = role === 'Teacher' ? (lastTeacherScreen || 'Teacher dashboard') : (lastStudentScreen || 'Student home');
-  return <Navigate to={getRouteForScreen(target)} replace />;
+  if (activeRole === 'Student' && student) {
+    return <Navigate to={getRouteForScreen(lastStudentScreen || 'Student home')} replace />;
+  }
+  if (teacher) {
+    return <Navigate to={getRouteForScreen(lastTeacherScreen || 'Teacher dashboard')} replace />;
+  }
+  if (student) {
+    return <Navigate to={getRouteForScreen(lastStudentScreen || 'Student home')} replace />;
+  }
+  return <Navigate to="/login/teacher" replace />;
 };
 
 const TeacherRedirect: React.FC = () => {
-  const { user, lastTeacherScreen } = useApp();
-  if (!user || user.role !== 'Teacher') {
+  const teacher = storageService.getCurrentTeacher();
+  const { lastTeacherScreen } = useApp();
+  if (!teacher) {
     return <Navigate to="/login/teacher" replace />;
   }
   return <Navigate to={getRouteForScreen(lastTeacherScreen || 'Teacher dashboard')} replace />;
 };
 
 const StudentRedirect: React.FC = () => {
-  const { user, lastStudentScreen } = useApp();
-  if (!user || user.role !== 'Student') {
+  const student = storageService.getCurrentStudent();
+  const { lastStudentScreen } = useApp();
+  if (!student) {
     return <Navigate to="/login/student" replace />;
   }
   return <Navigate to={getRouteForScreen(lastStudentScreen || 'Student home')} replace />;

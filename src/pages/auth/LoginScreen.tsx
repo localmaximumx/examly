@@ -1,24 +1,43 @@
-import React, { useState } from 'react';
-import { GraduationCap, Sparkles, ArrowRight, UserPlus, LogIn } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { GraduationCap, Sparkles, ArrowRight, UserPlus, LogIn, AlertCircle, ArrowRightLeft } from 'lucide-react';
 import { Badge, Button } from '../../components/common';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 import { authService } from '../../services/auth.service';
+import { storageService } from '../../services/storage.service';
 
 export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
-  const { login, go, notify, refreshData } = useApp();
+  const { login, changeRole, notify, refreshData, activeTeacher, activeStudent } = useApp();
+
+  // Check if accounts exist in database for this role
+  const hasExistingAccounts = React.useMemo(() => {
+    if (role === 'Teacher') {
+      return storageService.getTeachers().length > 0;
+    }
+    return storageService.getStudents().length > 0;
+  }, [role]);
 
   // Mode: 'login' or 'register'
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>(() => {
+    return hasExistingAccounts ? 'login' : 'register';
+  });
+
+  // Inline error message state
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Login form state
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  // Synchronize defaults when role switches
-  React.useEffect(() => {
+  // Synchronize state when role switches
+  useEffect(() => {
     setUsername('');
     setPassword('');
+    setErrorMessage(null);
+    const hasAccounts = role === 'Teacher'
+      ? storageService.getTeachers().length > 0
+      : storageService.getStudents().length > 0;
+    setAuthMode(hasAccounts ? 'login' : 'register');
   }, [role]);
 
   // Student registration form state
@@ -36,30 +55,46 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     const cleanUsername = username.trim();
     if (!cleanUsername) {
-      notify('Please enter a username.');
+      const msg = 'Please enter your username.';
+      setErrorMessage(msg);
+      notify(msg);
       return;
     }
     if (!password.trim()) {
-      notify('Please enter your password.');
+      const msg = 'Please enter your password.';
+      setErrorMessage(msg);
+      notify(msg);
       return;
     }
-    login(cleanUsername, role, password);
+
+    const res = login(cleanUsername, role, password);
+    if (!res.success && res.message) {
+      setErrorMessage(res.message);
+    }
   };
 
   const handleStudentRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (!regName.trim()) {
-      notify('Please enter your full name.');
+      const msg = 'Please enter your full name.';
+      setErrorMessage(msg);
+      notify(msg);
       return;
     }
     if (!regStudentId.trim()) {
-      notify('Please enter a student ID.');
+      const msg = 'Please enter a student ID.';
+      setErrorMessage(msg);
+      notify(msg);
       return;
     }
     if (!regPassword.trim()) {
-      notify('Please enter a password.');
+      const msg = 'Please enter a password.';
+      setErrorMessage(msg);
+      notify(msg);
       return;
     }
 
@@ -82,19 +117,26 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
       login(cleanUsername, 'Student', regPassword);
       notify(`Welcome, ${res.user.name}! Registered for ${regGrade} (${cleanSection}).`);
     } else {
-      notify(res.message || 'Registration failed.');
+      const msg = res.message || 'Registration failed.';
+      setErrorMessage(msg);
+      notify(msg);
     }
   };
 
   const handleTeacherRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (!regTeacherName.trim()) {
-      notify('Please enter your full name.');
+      const msg = 'Please enter your full name.';
+      setErrorMessage(msg);
+      notify(msg);
       return;
     }
     const cleanUsername = (regTeacherUsername.trim() || regTeacherName.toLowerCase().replace(/\s+/g, '.')).toLowerCase();
     if (!regTeacherPassword.trim()) {
-      notify('Please enter a password.');
+      const msg = 'Please enter a password.';
+      setErrorMessage(msg);
+      notify(msg);
       return;
     }
 
@@ -109,9 +151,15 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
       login(cleanUsername, 'Teacher', regTeacherPassword);
       notify(`Welcome, ${res.user.name}! Teacher account registered successfully.`);
     } else {
-      notify(res.message || 'Teacher registration failed.');
+      const msg = res.message || 'Teacher registration failed.';
+      setErrorMessage(msg);
+      notify(msg);
     }
   };
+
+  // Other active session for quick switching in dev
+  const otherSession = role === 'Teacher' ? activeStudent : activeTeacher;
+  const otherRoleName = role === 'Teacher' ? 'Student' : 'Teacher';
 
   return (
     <div className="login-shell">
@@ -153,6 +201,72 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
             : 'Fill in your full details to register in the school database.'}
         </p>
 
+        {/* Quick session switch banner in development */}
+        {otherSession && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              padding: '9px 12px',
+              background: 'rgba(99, 102, 241, 0.12)',
+              border: '1px solid rgba(99, 102, 241, 0.28)',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              fontSize: '12px',
+              color: 'var(--text-primary, #fff)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <ArrowRightLeft size={14} style={{ color: 'var(--accent-blue, #818cf8)', flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                Active {otherRoleName}: <b>{otherSession.name}</b>
+              </span>
+            </div>
+            <button
+              type="button"
+              style={{
+                border: 'none',
+                background: 'var(--accent-blue, #6577e8)',
+                color: '#fff',
+                padding: '5px 10px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+              onClick={() => changeRole(otherRoleName as UserRole)}
+            >
+              Switch to {otherRoleName} →
+            </button>
+          </div>
+        )}
+
+        {/* Inline Error Message Banner */}
+        {errorMessage && (
+          <div
+            className="login-error-alert"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 14px',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              borderRadius: '8px',
+              color: '#f87171',
+              fontSize: '12px',
+              lineHeight: 1.45,
+              marginBottom: '16px'
+            }}
+          >
+            <AlertCircle size={16} style={{ flexShrink: 0, color: '#f87171' }} />
+            <span style={{ flex: 1 }}>{errorMessage}</span>
+          </div>
+        )}
+
         {/* Sign In vs Create Account Toggle for both Teacher and Student */}
         <div
           style={{
@@ -176,7 +290,10 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
               fontWeight: 700,
               cursor: 'pointer'
             }}
-            onClick={() => setAuthMode('login')}
+            onClick={() => {
+              setAuthMode('login');
+              setErrorMessage(null);
+            }}
           >
             <LogIn size={13} style={{ verticalAlign: '-2px', marginRight: '5px' }} />
             Sign in
@@ -194,7 +311,10 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
               fontWeight: 700,
               cursor: 'pointer'
             }}
-            onClick={() => setAuthMode('register')}
+            onClick={() => {
+              setAuthMode('register');
+              setErrorMessage(null);
+            }}
           >
             <UserPlus size={13} style={{ verticalAlign: '-2px', marginRight: '5px' }} />
             Create account
@@ -207,7 +327,10 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
             <input
               className="field"
               value={username}
-              onChange={e => setUsername(e.target.value)}
+              onChange={e => {
+                setUsername(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
               placeholder={role === 'Teacher' ? 'Enter teacher username' : 'Enter student username'}
             />
 
@@ -216,13 +339,16 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
               className="field"
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => {
+                setPassword(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
               placeholder="Enter your password"
             />
 
             <div className="login-row">
               <label className="remember">
-                <input type="checkbox" defaultChecked /> Remember me
+                <input type="checkbox" defaultChecked /> Remember session
               </label>
               <button
                 type="button"
@@ -230,8 +356,8 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
                 onClick={() =>
                   notify(
                     role === 'Teacher'
-                      ? 'Click "Create account" to create your new teacher profile, or sign in if already registered.'
-                      : 'Click "Create account" to register your new student profile, or sign in if already registered.'
+                      ? 'Click "Create account" to register a new teacher, or sign in with your username and password.'
+                      : 'Click "Create account" to register a new student, or sign in with your username and password.'
                   )
                 }
               >
@@ -252,7 +378,7 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
               value={regTeacherName}
               onChange={e => {
                 setRegTeacherName(e.target.value);
-                setRegTeacherUsername(e.target.value.toLowerCase().replace(/\s+/g, '.'));
+                if (errorMessage) setErrorMessage(null);
               }}
               placeholder="e.g. Bethlehem Worku"
               required
@@ -262,8 +388,11 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
             <input
               className="field"
               value={regTeacherUsername}
-              onChange={e => setRegTeacherUsername(e.target.value)}
-              placeholder="e.g. bethlehem.worku"
+              onChange={e => {
+                setRegTeacherUsername(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
+              placeholder={regTeacherName ? regTeacherName.toLowerCase().replace(/\s+/g, '.') : 'e.g. bethlehem.worku'}
               required
             />
 
@@ -272,7 +401,10 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
               className="field"
               type="password"
               value={regTeacherPassword}
-              onChange={e => setRegTeacherPassword(e.target.value)}
+              onChange={e => {
+                setRegTeacherPassword(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
               placeholder="Choose password"
               required
             />
@@ -284,7 +416,7 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
             </div>
           </form>
         ) : (
-          /* Student Registration Form: Full Name, Username, Grade & Section, ID, Password */
+          /* Student Registration Form: Full Name, Class, Student ID, Password */
           <form onSubmit={handleStudentRegisterSubmit}>
             <label>Full Name *</label>
             <input
@@ -292,29 +424,30 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
               value={regName}
               onChange={e => {
                 setRegName(e.target.value);
-                setRegUsername(e.target.value.toLowerCase().replace(/\s+/g, '.'));
+                if (errorMessage) setErrorMessage(null);
               }}
               placeholder="e.g. Dawit Haile"
               required
             />
 
-            <label>Username *</label>
+            <label>Username (optional, auto-generated)</label>
             <input
               className="field"
               value={regUsername}
-              onChange={e => setRegUsername(e.target.value)}
-              placeholder="e.g. dawit.haile"
-              required
+              onChange={e => {
+                setRegUsername(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
+              placeholder={regName ? regName.toLowerCase().replace(/\s+/g, '.') : 'e.g. dawit.haile'}
             />
 
             <div className="two-fields">
               <div>
-                <label>Grade *</label>
+                <label>Grade Level</label>
                 <select
                   className="field"
                   value={regGrade}
                   onChange={e => setRegGrade(e.target.value)}
-                  required
                 >
                   <option value="Grade 9">Grade 9</option>
                   <option value="Grade 10">Grade 10</option>
@@ -323,17 +456,15 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
                 </select>
               </div>
               <div>
-                <label>Section *</label>
+                <label>Section</label>
                 <select
                   className="field"
                   value={regSection}
                   onChange={e => setRegSection(e.target.value)}
-                  required
                 >
                   <option value="Section A">Section A</option>
                   <option value="Section B">Section B</option>
                   <option value="Section C">Section C</option>
-                  <option value="Section D">Section D</option>
                 </select>
               </div>
             </div>
@@ -344,7 +475,10 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
                 <input
                   className="field"
                   value={regStudentId}
-                  onChange={e => setRegStudentId(e.target.value)}
+                  onChange={e => {
+                    setRegStudentId(e.target.value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
                   placeholder="e.g. STU-1008"
                   required
                 />
@@ -355,7 +489,10 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
                   className="field"
                   type="password"
                   value={regPassword}
-                  onChange={e => setRegPassword(e.target.value)}
+                  onChange={e => {
+                    setRegPassword(e.target.value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
                   placeholder="Choose password"
                   required
                 />
@@ -371,13 +508,25 @@ export const LoginScreen: React.FC<{ role: UserRole }> = ({ role }) => {
         )}
 
         <small className="login-demo-note">
-          Local Database Persistence · Accounts saved in browser database
+          Local Database Persistence · Sessions kept across role switches
         </small>
       </div>
 
       <div className="login-switch">
-        <button onClick={() => { setAuthMode('login'); go('Teacher login'); }}>Teacher portal</button>
-        <button onClick={() => { setAuthMode('login'); go('Student login'); }}>Student portal</button>
+        <button
+          type="button"
+          onClick={() => changeRole('Teacher')}
+          style={{ fontWeight: role === 'Teacher' ? 700 : 500 }}
+        >
+          Teacher portal {activeTeacher ? `(${activeTeacher.name.split(' ')[0]})` : ''}
+        </button>
+        <button
+          type="button"
+          onClick={() => changeRole('Student')}
+          style={{ fontWeight: role === 'Student' ? 700 : 500 }}
+        >
+          Student portal {activeStudent ? `(${activeStudent.name.split(' ')[0]})` : ''}
+        </button>
       </div>
     </div>
   );

@@ -9,6 +9,8 @@ import { CustomAlertOptions } from '../components/common/CustomAlertModal';
 interface AppContextType {
   user: User | null;
   role: UserRole;
+  activeTeacher: User | null;
+  activeStudent: User | null;
   screen: Screen;
   lastTeacherScreen: Screen;
   lastStudentScreen: Screen;
@@ -41,7 +43,7 @@ interface AppContextType {
   go: (next: Screen) => void;
   changeRole: (next: UserRole) => void;
   login: (username: string, role: UserRole, password?: string) => { success: boolean; message?: string };
-  logout: () => void;
+  logout: (roleToLogout?: UserRole) => void;
   notify: (message: string) => void;
   setMobileOpen: (open: boolean) => void;
   setExamTitle: (title: string) => void;
@@ -72,11 +74,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isTeacherPath = location.pathname.startsWith('/teacher');
+  const isTeacherPath = location.pathname.startsWith('/teacher') || location.pathname === '/login/teacher';
+  const isStudentPath = location.pathname.startsWith('/student') || location.pathname === '/login/student';
 
-  const [role, setRole] = useState<UserRole>(() => (isTeacherPath ? 'Teacher' : 'Student'));
+  const [activeTeacher, setActiveTeacher] = useState<User | null>(() => storageService.getCurrentTeacher());
+  const [activeStudent, setActiveStudent] = useState<User | null>(() => storageService.getCurrentStudent());
+
+  const [role, setRole] = useState<UserRole>(() => {
+    if (isTeacherPath) return 'Teacher';
+    if (isStudentPath) return 'Student';
+    return storageService.getActiveRole();
+  });
+
   const [user, setUser] = useState<User | null>(() => {
-    return authService.getCurrentUser();
+    if (isTeacherPath) return storageService.getCurrentTeacher();
+    if (isStudentPath) return storageService.getCurrentStudent();
+    return storageService.getCurrentUser();
   });
 
   // Derive initial screen from current URL path if valid
@@ -217,26 +230,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isTeacherScreen(matchedScreen)) {
       setRole('Teacher');
-      const currentUser = authService.getCurrentUser();
-      if (!currentUser || currentUser.role !== 'Teacher') {
+      storageService.setActiveRole('Teacher');
+      const teacher = storageService.getCurrentTeacher();
+      if (!teacher) {
+        setUser(null);
         setScreen('Teacher login');
         navigate('/login/teacher');
         return;
       }
-      setUser(currentUser);
+      setUser(teacher);
+      setActiveTeacher(teacher);
       setLastTeacherScreen(matchedScreen);
       localStorage.setItem('examly_last_teacher_screen', matchedScreen);
     } else if (isStudentScreen(matchedScreen)) {
       setRole('Student');
-      const currentUser = authService.getCurrentUser();
-      if (!currentUser || currentUser.role !== 'Student') {
+      storageService.setActiveRole('Student');
+      const student = storageService.getCurrentStudent();
+      if (!student) {
+        setUser(null);
         setScreen('Student login');
         navigate('/login/student');
         return;
       }
-      setUser(currentUser);
+      setUser(student);
+      setActiveStudent(student);
       setLastStudentScreen(matchedScreen);
       localStorage.setItem('examly_last_student_screen', matchedScreen);
+    } else if (location.pathname === '/login/teacher' || location.pathname === '/teacher/login') {
+      setRole('Teacher');
+      const teacher = storageService.getCurrentTeacher();
+      setUser(teacher);
+      setActiveTeacher(teacher);
+    } else if (location.pathname === '/login/student' || location.pathname === '/student/login') {
+      setRole('Student');
+      const student = storageService.getCurrentStudent();
+      setUser(student);
+      setActiveStudent(student);
     }
   }, [location.pathname]);
 
@@ -244,26 +273,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetRoute = getRouteForScreen(next);
     if (isTeacherScreen(next)) {
       setRole('Teacher');
-      const currentUser = authService.getCurrentUser();
-      if (!currentUser || currentUser.role !== 'Teacher') {
+      storageService.setActiveRole('Teacher');
+      const teacher = storageService.getCurrentTeacher();
+      if (!teacher) {
+        setUser(null);
         setScreen('Teacher login');
         setMobileOpen(false);
         navigate('/login/teacher');
         return;
       }
-      setUser(currentUser);
+      setUser(teacher);
+      setActiveTeacher(teacher);
       setLastTeacherScreen(next);
       localStorage.setItem('examly_last_teacher_screen', next);
     } else if (isStudentScreen(next)) {
       setRole('Student');
-      const currentUser = authService.getCurrentUser();
-      if (!currentUser || currentUser.role !== 'Student') {
+      storageService.setActiveRole('Student');
+      const student = storageService.getCurrentStudent();
+      if (!student) {
+        setUser(null);
         setScreen('Student login');
         setMobileOpen(false);
         navigate('/login/student');
         return;
       }
-      setUser(currentUser);
+      setUser(student);
+      setActiveStudent(student);
       setLastStudentScreen(next);
       localStorage.setItem('examly_last_student_screen', next);
     }
@@ -274,17 +309,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [navigate]);
 
   const changeRole = useCallback((nextRole: UserRole) => {
-    const currentUser = authService.getCurrentUser();
     if (nextRole === 'Teacher') {
       setRole('Teacher');
-      if (currentUser && currentUser.role === 'Teacher') {
-        setUser(currentUser);
-        const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || lastTeacherScreen || 'Teacher dashboard';
+      storageService.setActiveRole('Teacher');
+      const teacherUser = storageService.getCurrentTeacher();
+      if (teacherUser) {
+        setUser(teacherUser);
+        setActiveTeacher(teacherUser);
+        const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || 'Teacher dashboard';
         const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
         setScreen(targetScreen);
         setLastTeacherScreen(targetScreen);
         localStorage.setItem('examly_last_teacher_screen', targetScreen);
         navigate(getRouteForScreen(targetScreen));
+        notify(`Switched to Teacher: ${teacherUser.name}`);
       } else {
         setUser(null);
         setScreen('Teacher login');
@@ -292,21 +330,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } else {
       setRole('Student');
-      if (currentUser && currentUser.role === 'Student') {
-        setUser(currentUser);
-        const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || lastStudentScreen || 'Student home';
+      storageService.setActiveRole('Student');
+      const studentUser = storageService.getCurrentStudent();
+      if (studentUser) {
+        setUser(studentUser);
+        setActiveStudent(studentUser);
+        const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || 'Student home';
         const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
         setScreen(targetScreen);
         setLastStudentScreen(targetScreen);
         localStorage.setItem('examly_last_student_screen', targetScreen);
         navigate(getRouteForScreen(targetScreen));
+        notify(`Switched to Student: ${studentUser.name}`);
       } else {
         setUser(null);
         setScreen('Student login');
         navigate('/login/student');
       }
     }
-  }, [navigate, lastTeacherScreen, lastStudentScreen]);
+  }, [navigate, notify]);
 
   const login = useCallback(
     (username: string, loginRole: UserRole, password?: string): { success: boolean; message?: string } => {
@@ -314,15 +356,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.success && res.user) {
         setUser(res.user);
         setRole(loginRole);
+        storageService.setActiveRole(loginRole);
         if (loginRole === 'Teacher') {
-          const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || lastTeacherScreen || 'Teacher dashboard';
+          setActiveTeacher(res.user);
+          const savedTeacher = (localStorage.getItem('examly_last_teacher_screen') as Screen) || 'Teacher dashboard';
           const targetScreen = isTeacherScreen(savedTeacher) ? savedTeacher : 'Teacher dashboard';
           setScreen(targetScreen);
           setLastTeacherScreen(targetScreen);
           localStorage.setItem('examly_last_teacher_screen', targetScreen);
           navigate(getRouteForScreen(targetScreen));
         } else {
-          const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || lastStudentScreen || 'Student home';
+          setActiveStudent(res.user);
+          const savedStudent = (localStorage.getItem('examly_last_student_screen') as Screen) || 'Student home';
           const targetScreen = isStudentScreen(savedStudent) ? savedStudent : 'Student home';
           setScreen(targetScreen);
           setLastStudentScreen(targetScreen);
@@ -336,20 +381,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notify(errorMsg);
       return { success: false, message: errorMsg };
     },
-    [navigate, notify, lastTeacherScreen, lastStudentScreen]
+    [navigate, notify]
   );
 
-  const logout = useCallback(() => {
-    authService.logout();
-    setUser(null);
-    if (role === 'Teacher') {
-      setScreen('Teacher login');
-      navigate('/login/teacher');
+  const logout = useCallback((roleToLogout?: UserRole) => {
+    const targetRole = roleToLogout || role;
+    authService.logout(targetRole);
+    if (targetRole === 'Teacher') {
+      setActiveTeacher(null);
+      if (role === 'Teacher') {
+        setUser(null);
+        setScreen('Teacher login');
+        navigate('/login/teacher');
+      }
     } else {
-      setScreen('Student login');
-      navigate('/login/student');
+      setActiveStudent(null);
+      if (role === 'Student') {
+        setUser(null);
+        setScreen('Student login');
+        navigate('/login/student');
+      }
     }
-    notify('You have been logged out.');
+    notify(`Signed out of ${targetRole} portal.`);
   }, [role, navigate, notify]);
 
   return (
@@ -357,6 +410,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         user,
         role,
+        activeTeacher,
+        activeStudent,
         screen,
         lastTeacherScreen,
         lastStudentScreen,

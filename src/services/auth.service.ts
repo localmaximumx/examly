@@ -3,8 +3,16 @@ import { storageService } from './storage.service';
 import { SEED_TEACHERS } from '../data/seedData';
 
 class AuthService {
-  public getCurrentUser(): User | null {
-    return storageService.getCurrentUser();
+  public getCurrentUser(roleHint?: UserRole): User | null {
+    return storageService.getCurrentUser(roleHint);
+  }
+
+  public getCurrentTeacher(): User | null {
+    return storageService.getCurrentTeacher();
+  }
+
+  public getCurrentStudent(): User | null {
+    return storageService.getCurrentStudent();
   }
 
   public login(
@@ -28,27 +36,34 @@ class AuthService {
       }
 
       if (!found) {
+        // Check if username belongs to a Student account
+        const students = storageService.getStudents();
+        const asStudent = students.find(s => s.username.toLowerCase() === cleanUsername);
+        if (asStudent) {
+          return {
+            success: false,
+            message: `Account "${username}" is registered as a Student. Please switch to the Student Portal to sign in.`
+          };
+        }
         return {
           success: false,
-          message: `No teacher account found with username "${username}". Please click "Create account" to register.`
+          message: `Username "${username}" does not exist. Please check your username or click "Create account".`
         };
       }
 
-      // Password verification if password is provided
-      if (password !== undefined) {
-        if (!password.trim()) {
-          return {
-            success: false,
-            message: 'Please enter your password.'
-          };
-        }
-        const expected = found.password || 'examly-demo';
-        if (password !== expected) {
-          return {
-            success: false,
-            message: 'Incorrect password. Please verify your credentials and try again.'
-          };
-        }
+      // Password verification
+      if (!password || !password.trim()) {
+        return {
+          success: false,
+          message: 'Please enter your password.'
+        };
+      }
+      const expected = found.password || 'examly-demo';
+      if (password !== expected) {
+        return {
+          success: false,
+          message: 'Password is not correct. Please try again.'
+        };
       }
 
       const user: User = {
@@ -60,6 +75,7 @@ class AuthService {
         email: found.email || `${found.username}@examly.edu`
       };
 
+      storageService.saveCurrentTeacher(user);
       storageService.saveCurrentUser(user);
       storageService.addActivityLog({
         action: `${user.name} signed into the teacher workspace`,
@@ -74,27 +90,34 @@ class AuthService {
       const student = students.find(s => s.username.toLowerCase() === cleanUsername);
 
       if (!student) {
+        // Check if username belongs to a Teacher account
+        const teachers = storageService.getTeachers();
+        const asTeacher = teachers.find(t => t.username.toLowerCase() === cleanUsername);
+        if (asTeacher) {
+          return {
+            success: false,
+            message: `Account "${username}" is registered as a Teacher. Please switch to the Teacher Portal to sign in.`
+          };
+        }
         return {
           success: false,
-          message: `No student account found with username "${username}". Please click "Create account" to register.`
+          message: `Username "${username}" does not exist. Please check your username or click "Create account".`
         };
       }
 
-      // Password verification if password is provided
-      if (password !== undefined) {
-        if (!password.trim()) {
-          return {
-            success: false,
-            message: 'Please enter your password.'
-          };
-        }
-        const expected = student.password || 'examly-demo';
-        if (password !== expected) {
-          return {
-            success: false,
-            message: 'Incorrect password. Please verify your credentials and try again.'
-          };
-        }
+      // Password verification
+      if (!password || !password.trim()) {
+        return {
+          success: false,
+          message: 'Please enter your password.'
+        };
+      }
+      const expected = student.password || 'examly-demo';
+      if (password !== expected) {
+        return {
+          success: false,
+          message: 'Password is not correct. Please try again.'
+        };
       }
 
       const user: User = {
@@ -110,6 +133,7 @@ class AuthService {
         email: `${student.username}@examly.edu`
       };
 
+      storageService.saveCurrentStudent(user);
       storageService.saveCurrentUser(user);
       storageService.addActivityLog({
         action: `${user.name} signed into the student portal`,
@@ -145,6 +169,7 @@ class AuthService {
       password: data.password
     });
 
+    storageService.saveCurrentTeacher(newTeacher);
     storageService.saveCurrentUser(newTeacher);
     return { success: true, user: newTeacher };
   }
@@ -194,20 +219,43 @@ class AuthService {
       email: `${newStudent.username}@examly.edu`
     };
 
+    storageService.saveCurrentStudent(user);
     storageService.saveCurrentUser(user);
     return { success: true, user };
   }
 
-  public logout(): void {
-    const user = this.getCurrentUser();
+  public logout(roleToLogout?: UserRole): void {
+    const targetRole = roleToLogout || storageService.getActiveRole();
+    const user = targetRole === 'Teacher' ? storageService.getCurrentTeacher() : storageService.getCurrentStudent();
     if (user) {
       storageService.addActivityLog({
-        action: `${user.name} logged out`,
+        action: `${user.name} signed out (${targetRole} portal)`,
         user: user.name,
         timestamp: 'Just now',
         color: 'orange'
       });
     }
+
+    if (targetRole === 'Teacher') {
+      storageService.saveCurrentTeacher(null);
+    } else {
+      storageService.saveCurrentStudent(null);
+    }
+
+    // Check if the other role session is still kept
+    const otherRole = targetRole === 'Teacher' ? 'Student' : 'Teacher';
+    const otherUser = targetRole === 'Teacher' ? storageService.getCurrentStudent() : storageService.getCurrentTeacher();
+    if (otherUser) {
+      storageService.saveCurrentUser(otherUser);
+      storageService.setActiveRole(otherRole);
+    } else {
+      storageService.saveCurrentUser(null);
+    }
+  }
+
+  public logoutAll(): void {
+    storageService.saveCurrentTeacher(null);
+    storageService.saveCurrentStudent(null);
     storageService.saveCurrentUser(null);
   }
 }
