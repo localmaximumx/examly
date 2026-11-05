@@ -220,7 +220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentUser = authService.getCurrentUser();
       if (!currentUser || currentUser.role !== 'Teacher') {
         setScreen('Teacher login');
-        navigate('/teacher/login');
+        navigate('/login/teacher');
         return;
       }
       setUser(currentUser);
@@ -231,7 +231,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentUser = authService.getCurrentUser();
       if (!currentUser || currentUser.role !== 'Student') {
         setScreen('Student login');
-        navigate('/student/login');
+        navigate('/login/student');
         return;
       }
       setUser(currentUser);
@@ -248,7 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!currentUser || currentUser.role !== 'Teacher') {
         setScreen('Teacher login');
         setMobileOpen(false);
-        navigate('/teacher/login');
+        navigate('/login/teacher');
         return;
       }
       setUser(currentUser);
@@ -260,7 +260,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!currentUser || currentUser.role !== 'Student') {
         setScreen('Student login');
         setMobileOpen(false);
-        navigate('/student/login');
+        navigate('/login/student');
         return;
       }
       setUser(currentUser);
@@ -288,7 +288,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         setUser(null);
         setScreen('Teacher login');
-        navigate('/teacher/login');
+        navigate('/login/teacher');
       }
     } else {
       setRole('Student');
@@ -303,7 +303,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         setUser(null);
         setScreen('Student login');
-        navigate('/student/login');
+        navigate('/login/student');
       }
     }
   }, [navigate, lastTeacherScreen, lastStudentScreen]);
@@ -344,10 +344,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUser(null);
     if (role === 'Teacher') {
       setScreen('Teacher login');
-      navigate('/teacher/login');
+      navigate('/login/teacher');
     } else {
       setScreen('Student login');
-      navigate('/student/login');
+      navigate('/login/student');
     }
     notify('You have been logged out.');
   }, [role, navigate, notify]);

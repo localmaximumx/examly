@@ -38,18 +38,27 @@ import { StudentHistoryScreen } from './pages/student/StudentHistoryScreen';
 import { StudentResultScreen } from './pages/student/StudentResultScreen';
 
 const RootRedirect: React.FC = () => {
-  const { role, lastTeacherScreen, lastStudentScreen } = useApp();
+  const { user, role, lastTeacherScreen, lastStudentScreen } = useApp();
+  if (!user) {
+    return <Navigate to={role === 'Teacher' ? '/login/teacher' : '/login/student'} replace />;
+  }
   const target = role === 'Teacher' ? (lastTeacherScreen || 'Teacher dashboard') : (lastStudentScreen || 'Student home');
   return <Navigate to={getRouteForScreen(target)} replace />;
 };
 
 const TeacherRedirect: React.FC = () => {
-  const { lastTeacherScreen } = useApp();
+  const { user, lastTeacherScreen } = useApp();
+  if (!user || user.role !== 'Teacher') {
+    return <Navigate to="/login/teacher" replace />;
+  }
   return <Navigate to={getRouteForScreen(lastTeacherScreen || 'Teacher dashboard')} replace />;
 };
 
 const StudentRedirect: React.FC = () => {
-  const { lastStudentScreen } = useApp();
+  const { user, lastStudentScreen } = useApp();
+  if (!user || user.role !== 'Student') {
+    return <Navigate to="/login/student" replace />;
+  }
   return <Navigate to={getRouteForScreen(lastStudentScreen || 'Student home')} replace />;
 };
 
@@ -59,9 +68,11 @@ const MainRouter: React.FC = () => {
       {/* Root redirect */}
       <Route path="/" element={<RootRedirect />} />
 
-      {/* Auth screens (still available if directly needed) */}
+      {/* Auth screens */}
       <Route path="/login/teacher" element={<LoginScreen role="Teacher" />} />
+      <Route path="/teacher/login" element={<LoginScreen role="Teacher" />} />
       <Route path="/login/student" element={<LoginScreen role="Student" />} />
+      <Route path="/student/login" element={<LoginScreen role="Student" />} />
 
       {/* Teacher workspace routes */}
       <Route path="/teacher" element={<TeacherRedirect />} />

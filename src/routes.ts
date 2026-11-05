@@ -41,7 +41,11 @@ export const ROUTE_TO_SCREEN: Record<string, Screen> = Object.entries(SCREEN_TO_
     acc[route] = screen as Screen;
     return acc;
   },
-  { '/teacher/students': 'Students & classes' } as Record<string, Screen>
+  {
+    '/teacher/students': 'Students & classes',
+    '/teacher/login': 'Teacher login',
+    '/student/login': 'Student login'
+  } as Record<string, Screen>
 );
 
 export function getRouteForScreen(screen: Screen): string {
